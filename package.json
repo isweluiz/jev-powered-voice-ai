@@ -1,9 +1,9 @@
 {
-  "name": "call-coach",
+  "name": "cayana",
   "version": "1.0.0",
   "private": true,
   "main": "electron.js",
-  "description": "Live sales-call coach using TypeSafe Jev",
+  "description": "Cayana voice agents and live conversation coaching powered by Jev",
   "scripts": {
     "start": "node server.mjs",
     "overlay": "electron .",

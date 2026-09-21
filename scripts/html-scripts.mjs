@@ -4,7 +4,7 @@ import { parse } from 'parse5';
 // as JS modules. Locations map back to the original HTML, including same-line code.
 const locations = new Map();
 export default {
-  meta: { name: 'osprey-html-scripts', version: '1.0.0' },
+  meta: { name: 'cayana-html-scripts', version: '1.0.0' },
   preprocess(source, filename) {
     const scripts = [], offsets = [];
     function visit(node) {

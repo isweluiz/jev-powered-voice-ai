@@ -271,10 +271,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
   try {
     const app = await createApp();
     app.server.on('error', async () => {
-      console.error('Osprey could not listen on the configured address. Check HOST and PORT.');
+      console.error('Cayana could not listen on the configured address. Check HOST and PORT.');
       process.exitCode = 1; await app.close();
     });
-    app.server.listen(app.port, app.host, () => console.log(`Osprey running at ${app.auth.origin || `http://127.0.0.1:${app.port}`}${app.auth.enabled && !app.auth.configured ? ' · Google sign-in awaits configuration' : ''}`));
+    app.server.listen(app.port, app.host, () => console.log(`Cayana running at ${app.auth.origin || `http://127.0.0.1:${app.port}`}${app.auth.enabled && !app.auth.configured ? ' · Google sign-in awaits configuration' : ''}`));
     let closing = false;
     for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => {
       if (closing) return;
@@ -282,7 +282,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
       await app.close();
     });
   } catch {
-    console.error('Osprey could not start. Check the database connection and server configuration.');
+    console.error('Cayana could not start. Check the database connection and server configuration.');
     process.exitCode = 1;
   }
 }

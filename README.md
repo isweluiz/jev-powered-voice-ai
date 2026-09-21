@@ -1,4 +1,4 @@
-# Osprey
+# Cayana
 
 A sales-call workspace with Google sign-in, Bandwidth speech recognition, Jev call analysis, and
 Deepgram spoken coaching. Browser speech recognition is available as an alternative.
@@ -25,6 +25,9 @@ startup under a database lock. Initialization passwords apply only to a new volu
 changing `.env` alone does not rotate an existing database password. `npm run db:stop`
 stops the container without deleting data. Keep database backups before upgrading
 PostgreSQL; do not delete the volume to repair a connection problem.
+
+Cayana retains the existing `osprey` database, Docker storage, and session-cookie
+identifiers so the name change does not require a data migration or signing in again.
 
 Open http://127.0.0.1:3456, sign in with Google, and select **Settings**. Administrators can enter your Bandwidth STT,
 Deepgram TTS, Jev, and OpenAI API keys (OpenAI is needed only for Voice agent mode). Choose **Bandwidth STT** or **Browser speech
