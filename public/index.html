@@ -3,20 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Call Coach</title>
+<title>Osprey</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/settings.css">
+<link rel="stylesheet" href="/workspace.css">
 <style>
 :root {
-  --paper: #edf0f4; --surface: #ffffff; --ink: #172033; --muted: #5e6a80; --faint: #8a94a7; --line: #d5dbe5;
-  --cobalt: #2743c9; --on-cobalt: #ffffff; --stop: #b8322a; --warn: #a86c07;
-  --s0: #7d889c; --s1: #4b5fd1; --s2: #0f7f8c; --s3: #178049;
+  /* Bandwidth website palette: bandwidth.com, verified 2026-09-21. */
+  --brand-blue: #079cee; --brand-purple: #9a59c5; --brand-green: #00bf8c; --brand-orange: #ff6f47;
+  --paper: #f5fbfe; --surface: #ffffff; --ink: #08121d; --muted: #526878; --faint: #5b7283; --line: #d4e5ef;
+  --cobalt: #076ea8; --on-cobalt: #ffffff; --stop: #b8322a; --warn: #b54e33;
+  --s0: #5b7283; --s1: #076ea8; --s2: #8b50b1; --s3: #037356;
   /* Overlay cards. The overlay floats over whatever is behind it, so
      it carries its own surface tokens rather than the page's. */
   --card-bg: rgba(255,255,255,0.93); --card-line: rgba(0,0,0,0.10);
-  --card-ink: #172033; --card-dim: rgba(23,32,51,0.68); --card-mute: rgba(23,32,51,0.45);
+  --card-ink: #08121d; --card-dim: rgba(8,18,29,0.68); --card-mute: rgba(8,18,29,0.45);
   --card-well: rgba(0,0,0,0.08); --card-well-2: rgba(0,0,0,0.05);
   --card-hover: rgba(0,0,0,0.12); --card-edge: rgba(0,0,0,0.16);
   --card-shadow: 0 2px 16px rgba(0,0,0,0.16); --card-shadow-live: 0 2px 22px rgba(0,0,0,0.22);
@@ -24,11 +28,11 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #10151f; --surface: #182030; --ink: #e7ebf2; --muted: #98a3b7; --faint: #6c7890; --line: #2a3448;
-    --cobalt: #8098ff; --on-cobalt: #0e1422; --stop: #f07167; --warn: #e0a53a;
-    --s0: #8490a6; --s1: #8d9cff; --s2: #45c4d1; --s3: #52c98e;
-    --card-bg: rgba(14,18,30,0.88); --card-line: rgba(255,255,255,0.08);
-    --card-ink: #e7ebf2; --card-dim: rgba(255,255,255,0.70); --card-mute: rgba(255,255,255,0.45);
+    --paper: #08121d; --surface: #082134; --ink: #f5fbfe; --muted: #a7becf; --faint: #8ca7bb; --line: #24485e;
+    --cobalt: #079cee; --on-cobalt: #08121d; --stop: #f07167; --warn: #ff6f47;
+    --s0: #8ca7bb; --s1: #38aff1; --s2: #ae7ad0; --s3: #00bf8c;
+    --card-bg: rgba(8,18,29,0.88); --card-line: rgba(255,255,255,0.08);
+    --card-ink: #f5fbfe; --card-dim: rgba(255,255,255,0.70); --card-mute: rgba(255,255,255,0.45);
     --card-well: rgba(255,255,255,0.10); --card-well-2: rgba(255,255,255,0.06);
     --card-hover: rgba(255,255,255,0.14); --card-edge: rgba(255,255,255,0.20);
     --card-shadow: 0 2px 16px rgba(0,0,0,0.40); --card-shadow-live: 0 2px 20px rgba(0,0,0,0.50);
@@ -36,11 +40,11 @@
   }
 }
 :root[data-theme="dark"] {
-  --paper: #10151f; --surface: #182030; --ink: #e7ebf2; --muted: #98a3b7; --faint: #6c7890; --line: #2a3448;
-  --cobalt: #8098ff; --on-cobalt: #0e1422; --stop: #f07167; --warn: #e0a53a;
-  --s0: #8490a6; --s1: #8d9cff; --s2: #45c4d1; --s3: #52c98e;
-  --card-bg: rgba(14,18,30,0.88); --card-line: rgba(255,255,255,0.08);
-  --card-ink: #e7ebf2; --card-dim: rgba(255,255,255,0.70); --card-mute: rgba(255,255,255,0.45);
+  --paper: #08121d; --surface: #082134; --ink: #f5fbfe; --muted: #a7becf; --faint: #8ca7bb; --line: #24485e;
+  --cobalt: #079cee; --on-cobalt: #08121d; --stop: #f07167; --warn: #ff6f47;
+  --s0: #8ca7bb; --s1: #38aff1; --s2: #ae7ad0; --s3: #00bf8c;
+  --card-bg: rgba(8,18,29,0.88); --card-line: rgba(255,255,255,0.08);
+  --card-ink: #f5fbfe; --card-dim: rgba(255,255,255,0.70); --card-mute: rgba(255,255,255,0.45);
   --card-well: rgba(255,255,255,0.10); --card-well-2: rgba(255,255,255,0.06);
   --card-hover: rgba(255,255,255,0.14); --card-edge: rgba(255,255,255,0.20);
   --card-shadow: 0 2px 16px rgba(0,0,0,0.40); --card-shadow-live: 0 2px 20px rgba(0,0,0,0.50);
@@ -399,10 +403,11 @@ body.card-next main.pip summary { -webkit-app-region: no-drag; }
 <body>
 
 <div class="overlay-bar" id="overlayBar" hidden>
-  <span class="overlay-brand">Call Coach</span>
+  <span class="overlay-brand">Osprey</span>
   <button class="overlay-btn overlay-rec" id="overlayRec" aria-pressed="false" title="Capture call audio" hidden><span class="rec-dot"></span></button>
   <button class="overlay-btn" id="overlayClear" title="Clear call">&#8635;</button>
   <button class="overlay-btn" id="overlayTheme" title="Light / dark">&#9681;</button>
+  <button class="overlay-btn" id="overlaySettings" title="Voice and API settings">⚙</button>
   <button class="overlay-btn" id="overlayDash" title="Dashboard">&#9638;</button>
   <button class="overlay-btn" id="overlayMin" title="Minimize">&#8211;</button>
   <button class="overlay-btn" id="overlayClose" title="Close">&times;</button>
@@ -410,21 +415,23 @@ body.card-next main.pip summary { -webkit-app-region: no-drag; }
 <p class="overlay-err" id="overlayErr" hidden></p>
 
 <header class="bar">
-  <div class="brand">Call Coach</div>
-  <div class="speaker" role="group" aria-label="Who is speaking">
-    <button type="button" data-speaker="customer" aria-pressed="true">Customer speaking</button>
-    <button type="button" data-speaker="rep" aria-pressed="false">I'm speaking</button>
+  <div class="workspace-nav">
+    <div class="workspace-brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10v4m4-8v12m4-15v18m4-15v12m4-8v4"/></svg></span><div class="brand-copy"><strong>Osprey</strong><span>Conversation workspace</span></div></div>
+    <nav class="mode-nav" aria-label="Workspace mode"><button type="button" id="agentMode" aria-pressed="false">Voice agent</button><button type="button" id="coachMode" aria-pressed="true">Live coach</button></nav>
+    <div class="workspace-tools"><span class="connection-pill" id="connectionStatus" data-ready="false">Loading services</span><button type="button" class="ghost" id="settingsBtn">Settings</button><details class="account-menu" id="accountMenu" hidden><summary aria-label="Account menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg><span id="accountName">Account</span></summary><div class="menu-items account-details"><span id="accountEmail"></span><small id="accountRole"></small><button type="button" id="signOut">Sign out</button></div></details></div>
   </div>
-  <button type="button" class="mic" id="mic" aria-pressed="false"><span class="dot" aria-hidden="true"></span><span id="micLabel">Start listening</span></button>
-  <button type="button" class="capture" id="capture" aria-pressed="false" hidden><span class="cap-dot" aria-hidden="true"></span><span id="captureLabel">Capture call</span></button>
-  <button type="button" class="ghost" id="sample">Play sample call</button>
-  <button type="button" class="ghost" id="reset">Clear call</button>
-  <button type="button" class="ghost" id="themeBtn" title="Light / dark">Dark mode</button>
-  <button type="button" class="ghost" id="pipBtn" hidden>Pop out</button>
+  <div class="session-toolbar">
+    <div class="session-heading"><strong id="sessionTitle">Live call coaching</strong><span id="sessionDescription">Listen, understand intent, and guide the next step.</span></div>
+    <div class="speaker" role="group" aria-label="Who is speaking"><button type="button" data-speaker="customer" aria-pressed="true">Customer</button><button type="button" data-speaker="rep" aria-pressed="false">Sales rep</button></div>
+    <button type="button" class="capture" id="capture" aria-pressed="false" hidden><span class="cap-dot" aria-hidden="true"></span><span id="captureLabel">Capture call</span></button>
+    <button type="button" class="ghost agent-prompt-button" id="editAgent" hidden>Edit prompt</button>
+    <button type="button" class="mic" id="mic" aria-pressed="false"><span class="dot" aria-hidden="true"></span><span id="micLabel">Start listening</span></button>
+    <details class="session-menu" id="sessionMenu"><summary aria-label="Session actions">···</summary><div class="menu-items"><button type="button" id="sample">Run sample call</button><button type="button" id="reset">Clear conversation</button><button type="button" id="themeBtn">Dark mode</button><button type="button" id="pipBtn" hidden>Pop out</button></div></details>
+  </div>
 </header>
 
 <main>
-  <div class="notice" id="setup" hidden>The server has no API key yet. Stop it and restart with <code>TYPESAFE_API_KEY=your_key node server.mjs</code>.</div>
+  <div class="notice" id="setup" hidden>Add your Jev API key in Settings to analyze calls.</div>
 
   <section class="hero" id="hero" data-state="idle" aria-labelledby="stageName">
     <div class="hero-center">
@@ -471,6 +478,17 @@ body.card-next main.pip summary { -webkit-app-region: no-drag; }
       <button type="button" class="done" id="done">Mark done<kbd aria-hidden="true">D</kbd></button>
       <p class="done-msg" id="doneMsg" aria-live="polite"></p>
     </div>
+    <div class="agent-guidance" id="agentGuidance" data-status="waiting" hidden><div><span>Agent guidance</span><strong id="guidanceAction">Waiting for a customer turn</strong></div><small id="guidanceDetail">Suggested actions will guide the next reply.</small></div>
+  </section>
+  <section class="voice-controls voice-channel" id="voiceChannel" data-state="idle" aria-label="Live voice channel">
+    <div class="voice-channel-copy"><span class="voice-channel-label">VOICE CHANNEL</span><strong id="voicePhase" role="status">Ready to listen</strong><span class="voice-status" id="voiceStatus">Bandwidth STT · Deepgram voice</span></div>
+    <canvas id="voiceWave" class="voice-wave" aria-hidden="true"></canvas>
+    <div class="voice-channel-actions"><button type="button" class="ghost" id="generateReply" hidden disabled>Generate reply</button><button type="button" class="ghost" id="readAloud" disabled>Read aloud</button><button type="button" class="ghost" id="pauseVoice" hidden>Pause voice</button><button type="button" class="ghost" id="stopVoice" hidden>Stop voice</button></div>
+    <div class="agent-latest-reply" id="agentLatestReply" hidden><span>Latest reply</span><p id="latestReplyText" aria-live="polite"></p></div>
+  </section>
+  <p id="agentError" class="agent-error" role="alert" hidden></p>
+  <section class="agent-panel" id="agentPanel" hidden>
+    <button type="button" class="conversation-open" id="openConversation" aria-haspopup="dialog"><span class="conversation-heading">Conversation <span id="conversationCount">0 messages</span></span><span class="conversation-toggle">View transcript <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 4 4 4-4 4"/></svg></span></button>
   </section>
   <p class="visually-hidden" id="announce" aria-live="polite"></p>
 </main>
@@ -484,9 +502,21 @@ body.card-next main.pip summary { -webkit-app-region: no-drag; }
   <p class="error" id="error" role="alert" hidden></p>
 </footer>
 
+<dialog class="conversation-dialog" id="conversationDialog" aria-labelledby="conversationTitle">
+  <div class="conversation-dialog-heading"><div><p>Session transcript</p><h2 id="conversationTitle">Conversation</h2></div><button type="button" class="ghost" id="closeConversation" aria-label="Close transcript"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m4 4 8 8m0-8-8 8"/></svg></button></div>
+  <div class="agent-panel-head"><p id="agentModelLabel">OpenAI replies · Jev evaluation</p><span id="agentStatus" role="status">Ready when you are</span></div>
+  <div class="agent-messages" id="agentMessages" role="log" aria-label="Conversation transcript" aria-live="polite" tabindex="0"><p class="agent-empty">Your conversation will appear here when the session starts.</p></div>
+</dialog>
+
 <script type="module">
 import { decide, trackStage, createMemory, markDone, DEFAULT_CONFIG } from "/decide.js";
 import { PLAYBOOK } from "/playbook.js";
+import { AgentSession } from "/agent-session.js";
+import { JevClient, transcriptKey } from "/jev-client.js";
+import { VoiceWaveform } from "/waveform.js";
+import { mountSettings, getSettings } from "/settings.js";
+import "/account.js";
+import { BandwidthSpeech, BrowserSpeech, TranscriptAssembler, DeepgramSpeech } from "/speech.js";
 
 let pipWin = null;
 const $ = (id) => document.getElementById(id) || pipWin?.document.getElementById(id) || null;
@@ -508,7 +538,7 @@ const app = {
 const _qp = new URLSearchParams(location.search);
 const isOverlay = _qp.has("overlay");
 const overlayCard = _qp.get("card");
-const overlayChannel = isOverlay ? new BroadcastChannel("call-coach-sync") : null;
+const overlayChannel = isOverlay ? new BroadcastChannel(`call-coach-sync:${(await getSettings()).user?.id || "local"}`) : null;
 
 /* ---------- Theme ----------
    Light is the default. The choice is shared across every window
@@ -635,7 +665,7 @@ function renderNextIdle() {
   $("nextTitle").textContent = "Start the conversation";
   $("nextNote").hidden = true;
   $("nextConf").hidden = true;
-  $("tipMain").textContent = "Press Start listening, or type what the customer says below. Press S to switch who's speaking.";
+  $("tipMain").textContent = workspaceMode === "agent" ? "Start a voice session or type a customer message below. Suggested actions guide the agent’s replies." : "Press Start listening, or type what the customer says below. Press S to switch who's speaking.";
   $("more").hidden = true;
   $("nextActions").hidden = true;
 }
@@ -683,32 +713,24 @@ function showError(msg) {
 }
 
 /* ---------- Jev + local logic ---------- */
-function activeDone() {
-  const now = Date.now();
-  return Object.entries(app.memory.done).filter(([, until]) => until > now).map(([k]) => k);
+function scheduleEvaluate() {
+  clearTimeout(app.timer);
+  app.timer = setTimeout(() => { app.timer = null; evaluate(); }, 350);
 }
-function scheduleEvaluate() { clearTimeout(app.timer); app.timer = setTimeout(evaluate, 350); }
+function scheduleStreamingEvaluate() {
+  if (!app.timer) app.timer = setTimeout(() => { app.timer = null; evaluate(); }, 1000);
+}
 
-async function evaluate() {
-  if (!app.turns.some((t) => t.speaker === "customer")) return;
-  if (app.inFlight) { app.pending = true; return; }
-  app.inFlight = true; setActivity();
-  const sampleId = app.sampleId;
-  try {
-    const res = await fetch("/api/evaluate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ turns: app.turns, completed: activeDone() })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `The server returned status ${res.status}.`);
-    if (sampleId !== app.sampleId) return;
+const jevClient = new JevClient();
+function applyEvaluation(data, key) {
+  if (app.resultKey === key || key !== transcriptKey(app.turns)) return;
     showError("");
 
     const stage = trackStage(data.answers.buying_stage, app.memory.stage, STAGES);
     app.result = decide(data.answers, PLAYBOOK, app.memory);
     if (stage) renderStage(stage);
     renderNext(app.result, !stage?.changed);
+    $("readAloud").disabled = false;
 
     if (overlayChannel) {
       overlayChannel.postMessage({
@@ -738,7 +760,22 @@ async function evaluate() {
     if (stage?.changed) parts.push(`Buying stage: ${stage.label}${stage.from ? `, moved ${stage.trend} from ${stage.from}` : ""}. Score ${stage.buyingScore}.`);
     if (app.result.status === "act" && app.result.changed) parts.push(`Next step: ${app.result.title}.`);
     if (parts.length) $("announce").textContent = parts.join(" ");
+    app.resultKey = key; app.stageLabel = stage?.label || null;
+}
+
+async function evaluate() {
+  if (!app.turns.some((t) => t.speaker === "customer")) return;
+  if (app.inFlight) { app.pending = true; return; }
+  app.inFlight = true; setActivity();
+  const sampleId = app.sampleId;
+  const turns = app.turns.map(t => ({ speaker: t.speaker, text: t.text }));
+  const key = transcriptKey(turns);
+  try {
+    const data = await jevClient.evaluate(turns);
+    if (sampleId !== app.sampleId) return;
+    applyEvaluation(data, key);
   } catch (err) {
+    if (sampleId !== app.sampleId) return;
     showError(err instanceof TypeError ? "Can't reach the local server. Check that node server.mjs is still running." : err.message);
   } finally {
     app.inFlight = false; setActivity();
@@ -769,7 +806,7 @@ function markCurrentDone() {
     return;
   }
 
-  markDone(app.memory, r.action);
+  markDone(app.memory, r.action); app.resultKey = null;
   const mins = Math.round(DEFAULT_CONFIG.doneCooldownMs / 60000);
   $("doneMsg").textContent = `Marked "${r.title}" done. It's hidden for ${mins} minutes.`;
   clearTimeout(markCurrentDone.t);
@@ -777,47 +814,212 @@ function markCurrentDone() {
   evaluate();
 }
 
-/* ---------- Voice ---------- */
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null;
-if (SR) {
-  rec = new SR();
-  rec.continuous = true;
-  rec.interimResults = true;
-  rec.lang = navigator.language || "en-US";
-  rec.onresult = (e) => {
-    let interim = "";
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const r = e.results[i];
-      if (r.isFinal) addTurn(r[0].transcript, { merge: true });
-      else interim += r[0].transcript;
+/* ---------- Bandwidth STT + Deepgram TTS ---------- */
+const waveform = new VoiceWaveform($("voiceWave"), $("voiceChannel"));
+let workspaceMode = "coach";
+let providerConfig = null;
+let streamSpeaker = "customer";
+const assembler = new TranscriptAssembler();
+let inputProvider = "Bandwidth";
+const idleVoiceStatus = () => `${providerConfig?.sttProvider === "browser" ? "Browser" : "Bandwidth"} STT · Deepgram voice`;
+const speechCallbacks = {
+  onAnalyser(analyser) { waveform.setAnalyser(analyser); },
+  onText(segment) {
+    const turn = assembler.append(app.turns, segment, streamSpeaker);
+    showHeard(turn.text, streamSpeaker);
+    renderConversation();
+    if (workspaceMode === "agent") agentSession.transcript();
+    scheduleStreamingEvaluate();
+    if (overlayChannel) overlayChannel.postMessage({ type: "sync", turns: app.turns.map(t => ({ speaker: t.speaker, text: t.text })), signals: app.lastSignals });
+  },
+  onState(state, kind) {
+    waveform.setMode(state === "listening" ? "listening" : state);
+    $("voicePhase").textContent = state === "listening" ? "Listening to you" : state === "starting" ? "Connecting microphone…" : state === "stopping" ? "Finishing your turn…" : "Ready to listen";
+    app.listening = state === "listening";
+    const active = state !== "idle";
+    const busy = state === "starting" || state === "stopping";
+    $("mic").disabled = busy || (active && kind === "capture");
+    $("capture").disabled = busy || (active && kind !== "capture");
+    $("mic").setAttribute("aria-pressed", String(active && kind !== "capture"));
+    $("micLabel").textContent = active && kind !== "capture" ? state === "starting" ? "Connecting…" : state === "stopping" ? "Finishing…" : "Stop listening" : "Start listening";
+    $("capture").setAttribute("aria-pressed", String(active && kind === "capture"));
+    $("captureLabel").textContent = active && kind === "capture" ? "Stop capture" : "Capture call";
+    $("overlayRec").setAttribute("aria-pressed", String(active && kind === "capture"));
+    $("voiceStatus").textContent = state === "starting" ? `Connecting to ${inputProvider}…` : state === "listening" ? `Listening · ${inputProvider}` : state === "stopping" ? "Finishing transcript…" : idleVoiceStatus();
+    if (state === "idle" && app.turns.length) scheduleEvaluate();
+    setActivity();
+    updateSessionControls();
+  },
+  onError(message) {
+    if (workspaceMode === "agent") { $("agentError").textContent = message; $("agentError").hidden = false; agentSession.end(); }
+    else showError(message);
+  },
+};
+const speech = new BandwidthSpeech(speechCallbacks);
+const browserSpeech = new BrowserSpeech(speechCallbacks);
+const activeInput = () => speech.active ? speech : browserSpeech;
+const voice = new DeepgramSpeech({
+  onAnalyser(analyser) { waveform.setAnalyser(analyser); },
+  onState(state) {
+    waveform.setMode(state);
+    const labels = { idle: "Ready to listen", loading: "Preparing the voice…", playing: "Agent speaking", paused: "Voice paused", ready: "Press Play to hear the voice" };
+    $("voicePhase").textContent = labels[state] || labels.idle;
+    $("readAloud").textContent = "Read aloud";
+    $("readAloud").disabled = state !== "idle" || !app.result;
+    $("pauseVoice").hidden = !["playing", "paused", "ready"].includes(state);
+    $("pauseVoice").textContent = state === "paused" ? "Resume voice" : state === "ready" ? "Play voice" : "Pause voice";
+    $("stopVoice").hidden = state === "idle";
+    $("voiceStatus").textContent = state === "idle" ? idleVoiceStatus() : voice.streaming ? "Deepgram · Streaming audio" : "Deepgram · Voice playback";
+  },
+});
+$("pauseVoice").onclick = () => voice.togglePause().catch(error => showError(error.message));
+$("stopVoice").onclick = () => agentSession.end();
+const settingsPanel = mountSettings({
+  onChange(config) {
+    if (providerConfig && providerConfig.sttProvider !== config.sttProvider) agentSession.end();
+    providerConfig = config;
+    $("setup").hidden = config.configured.jev;
+    updateConnectionStatus();
+    $("agentModelLabel").textContent = `${config.agent.model} replies · Jev evaluation`;
+    $("voiceStatus").textContent = `${config.sttProvider === "browser" ? "Browser" : "Bandwidth"} STT · Deepgram voice`;
+    const canCapture = Boolean(navigator.mediaDevices?.getDisplayMedia);
+    $("capture").hidden = !canCapture;
+    if (isOverlay && overlayCard !== "next") $("overlayRec").hidden = !canCapture;
+  },
+  async onTestVoice(selectedVoice) {
+    voice.unlock().catch(() => {});
+    await agentSession.end();
+    await voice.speak("Your call coach is ready. Let's have a great conversation.", selectedVoice);
+  },
+});
+$("settingsBtn").onclick = () => settingsPanel.open();
+$("overlaySettings").onclick = () => settingsPanel.open();
+async function startListening(kind = "microphone") {
+  const useBrowser = kind === "microphone" && providerConfig?.sttProvider === "browser";
+  if (!useBrowser && !providerConfig?.configured.bandwidth) { showError("Add your Bandwidth STT key in Settings."); settingsPanel.open(); return; }
+  voice.stop(); showError(""); assembler.reset(); streamSpeaker = app.speaker;
+  inputProvider = useBrowser ? "Browser" : "Bandwidth";
+  await (useBrowser ? browserSpeech : speech).start(kind);
+}
+async function stopListening() { await Promise.all([speech.stop(), browserSpeech.stop()]); }
+function startCapture() { return startListening("capture"); }
+function stopCapture() { return stopListening(); }
+$("readAloud").onclick = async () => {
+  voice.unlock().catch(() => {});
+  if (voice.active) { voice.stop(); return; }
+  if (!providerConfig?.configured.deepgram) { settingsPanel.open(); return; }
+  try {
+    await stopListening();
+    showError("");
+    await voice.speak([app.result?.title, app.result?.tips?.[0]].filter(Boolean).join(". "));
+  } catch (error) { showError(error.message); }
+};
+const agentSession = new AgentSession({
+  getTurns: () => app.turns,
+  async getGuidance(turns, signal) {
+    clearTimeout(app.timer); app.timer = null;
+    const key = transcriptKey(turns);
+    $("agentGuidance").dataset.status = "checking";
+    $("guidanceAction").textContent = "Evaluating this turn…";
+    $("guidanceDetail").textContent = "Jev is choosing the next action.";
+    try {
+      const data = await jevClient.evaluate(turns, { signal, waitMs: 6000 });
+      if (signal.aborted || transcriptKey(app.turns) !== key) return null;
+      applyEvaluation(data, key);
+      const guidance = { status: app.result.status, action: app.result.action, score: app.result.score, tips: app.result.tips, stage: app.stageLabel };
+      $("agentGuidance").dataset.status = "applied";
+      $("guidanceAction").textContent = app.result.title || "Keep listening";
+      $("guidanceDetail").textContent = "Guidance for this reply · Your system prompt takes priority.";
+      return guidance;
+    } catch (error) {
+      if (signal.aborted) throw error;
+      $("agentGuidance").dataset.status = "unavailable";
+      $("guidanceAction").textContent = "Continuing without Jev guidance";
+      $("guidanceDetail").textContent = "Evaluation was unavailable. The agent will use your system prompt.";
+      return null;
     }
-    if (interim) showHeard(interim, app.speaker, true);
-  };
-  rec.onerror = (e) => {
-    if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-      stopListening();
-      showError("Microphone access is blocked. Allow it from the icon in the address bar, then press Start listening again.");
-    } else if (e.error === "network") {
-      showError("Speech recognition lost its connection. It will retry while listening is on.");
-    }
-  };
-  rec.onend = () => { if (app.listening) { try { rec.start(); } catch {} } };
+  },
+  startInput: () => { app.speaker = "customer"; return startListening(); },
+  stopInput: stopListening,
+  voice,
+  canSpeak: () => Boolean(providerConfig?.configured.deepgram),
+  onReply(text) { app.turns.push({ speaker: "rep", text, at: Date.now(), merge: false }); renderConversation(); scheduleEvaluate(); },
+  onState(state) {
+    if (state === "thinking" || state === "listening" || state === "evaluating") { $("agentError").hidden = true; $("agentError").textContent = ""; }
+    if (["thinking", "evaluating"].includes(state)) { waveform.setMode("thinking"); $("voicePhase").textContent = state === "evaluating" ? "Choosing the next action…" : "Preparing a reply…"; }
+    if (state === "idle" && !voice.active) { waveform.setMode("idle"); $("voicePhase").textContent = "Ready to listen"; }
+    $("agentStatus").textContent = state === "evaluating" ? "Jev is guiding the next reply…" : state === "thinking" ? "Preparing a reply…" : state === "speaking" ? "Agent speaking · Deepgram" : state === "listening" ? "Listening · pause briefly when your turn is complete" : "Ready when you are";
+    $("typeIn").disabled = agentSession.busy;
+    $("generateReply").disabled = agentSession.busy || app.turns.at(-1)?.speaker !== "customer";
+    updateSessionControls();
+  },
+  onError(message) { $("agentError").textContent = message; $("agentError").hidden = !message; },
+});
+function updateSessionControls() {
+  if (workspaceMode === "agent") {
+    $("mic").disabled = false;
+    $("mic").setAttribute("aria-pressed", String(agentSession.active || agentSession.busy));
+    $("micLabel").textContent = agentSession.active || agentSession.busy ? "End session" : "Start voice session";
+  }
 }
-function startListening() {
-  if (!rec) { showError("This browser can't transcribe speech. Use Chrome or Edge for voice, or type what the customer says."); return; }
-  showError("");
-  app.listening = true;
-  try { rec.start(); } catch {}
-  $("mic").setAttribute("aria-pressed", "true"); $("micLabel").textContent = "Stop listening";
-  setActivity();
+function updateConnectionStatus() {
+  if (!providerConfig) return;
+  const needed = workspaceMode === "agent" ? ["openai", "deepgram", ...(providerConfig.sttProvider === "browser" ? [] : ["bandwidth"])] : ["jev"];
+  const ready = needed.every(key => providerConfig.configured[key]);
+  $("connectionStatus").dataset.ready = String(ready);
+  $("connectionStatus").textContent = ready ? "Keys configured" : "Setup needed";
 }
-function stopListening() {
-  app.listening = false;
-  try { rec && rec.stop(); } catch {}
-  $("mic").setAttribute("aria-pressed", "false"); $("micLabel").textContent = "Start listening";
-  setActivity();
+function renderConversation() {
+  $("conversationCount").textContent = `${app.turns.length} ${app.turns.length === 1 ? "message" : "messages"}`;
+  const reply = app.turns.findLast(turn => turn.speaker === "rep")?.text || "";
+  $("agentLatestReply").hidden = workspaceMode !== "agent" || !reply;
+  if ($("latestReplyText").textContent !== reply) $("latestReplyText").textContent = reply;
+  if (!app.turns.length) {
+    const empty = document.createElement("p"); empty.className = "agent-empty";
+    empty.textContent = "Your conversation will appear here when the session starts.";
+    $("agentMessages").replaceChildren(empty);
+  } else $("agentMessages").replaceChildren(...app.turns.slice(-40).map(turn => {
+    const div = document.createElement("div"); div.className = "agent-message"; div.dataset.role = turn.speaker;
+    const label = document.createElement("b"); label.textContent = turn.speaker === "rep" ? "Agent" : "Customer";
+    div.append(label, document.createTextNode(turn.text)); return div;
+  }));
+  $("agentMessages").scrollTop = $("agentMessages").scrollHeight;
+  $("generateReply").disabled = agentSession.busy || app.turns.at(-1)?.speaker !== "customer";
 }
+async function setWorkspaceMode(mode) {
+  await agentSession.end();
+  workspaceMode = mode; document.body.dataset.mode = mode;
+  $("agentPanel").hidden = mode !== "agent";
+  $("agentGuidance").hidden = mode !== "agent";
+  $("editAgent").hidden = mode !== "agent";
+  $("generateReply").hidden = mode !== "agent";
+  if (mode !== "agent") $("conversationDialog").close();
+  $("coachMode").setAttribute("aria-pressed", String(mode === "coach"));
+  $("agentMode").setAttribute("aria-pressed", String(mode === "agent"));
+  $("sessionTitle").textContent = mode === "agent" ? "Voice agent session" : "Live call coaching";
+  $("sessionDescription").textContent = mode === "agent" ? "Qualify leads with your prompt, model, and voice." : "Listen, understand intent, and guide the next step.";
+  $("sample").disabled = mode === "agent";
+  $("micLabel").textContent = mode === "agent" ? "Start voice session" : "Start listening";
+  app.speaker = "customer";
+  $("typeIn").placeholder = mode === "agent" ? "Send a message to your agent…" : "Type what the customer said";
+  if (!app.result) renderNextIdle();
+  updateConnectionStatus(); renderConversation(); updateSessionControls();
+}
+$("coachMode").onclick = () => setWorkspaceMode("coach");
+$("agentMode").onclick = () => setWorkspaceMode("agent");
+$("editAgent").onclick = () => settingsPanel.open("agent");
+$("openConversation").onclick = () => {
+  $("conversationDialog").showModal();
+  $("agentMessages").scrollTop = $("agentMessages").scrollHeight;
+};
+$("closeConversation").onclick = () => $("conversationDialog").close();
+$("conversationDialog").addEventListener("click", (event) => {
+  if (event.target !== $("conversationDialog")) return;
+  const bounds = event.target.getBoundingClientRect();
+  if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) event.target.close();
+});
+$("generateReply").onclick = () => { voice.unlock().catch(() => {}); return agentSession.reply(); };
+window.addEventListener("pagehide", () => { agentSession.end(); speech.destroy(); browserSpeech.destroy(); voice.destroy(); waveform.destroy(); jevClient.clear(); });
 
 /* ---------- Picture-in-Picture overlay ---------- */
 async function openPiP() {
@@ -846,178 +1048,60 @@ function closePiP() {
   try { win.close(); } catch {}
 }
 
-/* ---------- Zoom capture ---------- */
-let capturing = false;
-let captureStream = null;
-let captureCtx = null;
-
-const CHUNK_SEC = 3;
-const SAMPLE_RATE = 16000;
-const CHUNK_SAMPLES = SAMPLE_RATE * CHUNK_SEC;
-
-const HALLUCINATIONS = new Set([
-  "you", "thank you", "thanks for watching", "subscribe",
-  "bye", "the end", "thanks for listening",
-]);
-
-function isHallucination(text) {
-  const lower = text.toLowerCase().replace(/[.!?,\s]+/g, " ").trim();
-  if (HALLUCINATIONS.has(lower)) return true;
-  const words = lower.split(" ");
-  if (words.length <= 3 && words.every((w) => w === words[0])) return true;
-  return false;
-}
-
-function rms(samples) {
-  let sum = 0;
-  for (let i = 0; i < samples.length; i++) sum += samples[i] * samples[i];
-  return Math.sqrt(sum / samples.length);
-}
-
-async function sendPCM(pcm) {
-  try {
-    const res = await fetch("/api/transcribe", { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: pcm.buffer });
-    const data = await res.json();
-    if (data.error) { showError(data.error); return; }
-    const text = data.text?.trim();
-    if (text && !isHallucination(text)) addTurn(text, { speaker: "customer", merge: true });
-  } catch (err) { console.error("Transcription error:", err); }
-}
-
-const WORKLET_CODE = `
-class ChunkProcessor extends AudioWorkletProcessor {
-  constructor() { super(); this.buf = []; this.len = 0; this.target = ${CHUNK_SAMPLES}; }
-  process(inputs) {
-    const ch = inputs[0]?.[0];
-    if (!ch) return true;
-    this.buf.push(new Float32Array(ch));
-    this.len += ch.length;
-    if (this.len >= this.target) {
-      const out = new Float32Array(this.len);
-      let off = 0;
-      for (const b of this.buf) { out.set(b, off); off += b.length; }
-      this.port.postMessage(out, [out.buffer]);
-      this.buf = []; this.len = 0;
-    }
-    return true;
-  }
-}
-registerProcessor("chunk-proc", ChunkProcessor);
-`;
-
-async function getElectronStream() {
-  const sources = await window.overlay.getSources();
-  const source = sources.find((s) => s.id.startsWith("screen:")) || sources[0];
-  if (!source) throw new Error("No capture sources found.");
-  return navigator.mediaDevices.getUserMedia({
-    audio: {
-      mandatory: {
-        chromeMediaSource: "desktop",
-        chromeMediaSourceId: source.id,
-      },
-      optional: [
-        { echoCancellation: false },
-        { noiseSuppression: false },
-        { autoGainControl: false },
-      ],
-    },
-    video: {
-      mandatory: {
-        chromeMediaSource: "desktop",
-        chromeMediaSourceId: source.id,
-        minWidth: 1,
-        maxWidth: 1,
-        minHeight: 1,
-        maxHeight: 1,
-      },
-    },
-  });
-}
-
-async function startCapture() {
-  try {
-    let stream;
-    if (window.overlay?.getSources) {
-      stream = await getElectronStream();
-    } else {
-      stream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
-    }
-    const audioTracks = stream.getAudioTracks();
-    if (audioTracks.length === 0) {
-      showError("No audio captured. Make sure to check \"Share audio\" when selecting the tab or screen.");
-      stream.getTracks().forEach((t) => t.stop());
-      return;
-    }
-    captureStream = stream;
-    capturing = true;
-    const videoTrack = stream.getVideoTracks()[0];
-    if (videoTrack) videoTrack.onended = () => stopCapture();
-
-    const ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
-    captureCtx = ctx;
-    const src = ctx.createMediaStreamSource(new MediaStream(audioTracks));
-    const blob = new Blob([WORKLET_CODE], { type: "application/javascript" });
-    const url = URL.createObjectURL(blob);
-    await ctx.audioWorklet.addModule(url);
-    URL.revokeObjectURL(url);
-    const node = new AudioWorkletNode(ctx, "chunk-proc");
-    node.port.onmessage = (e) => {
-      if (!capturing) return;
-      const pcm = e.data;
-      if (rms(pcm) >= 0.005) sendPCM(pcm);
-    };
-    src.connect(node).connect(ctx.destination);
-
-    $("capture").setAttribute("aria-pressed", "true");
-    $("captureLabel").textContent = "Stop capture";
-    if (app.listening) stopListening();
-    $("mic").disabled = true;
-    const orec = document.getElementById("overlayRec");
-    if (orec) orec.setAttribute("aria-pressed", "true");
-    showError("");
-  } catch (err) {
-    if (err.name !== "NotAllowedError") showError("Capture failed: " + err.message);
-    stopCapture();
-  }
-}
-
-function stopCapture() {
-  capturing = false;
-  if (captureCtx) { captureCtx.close().catch(() => {}); captureCtx = null; }
-  if (captureStream) { captureStream.getTracks().forEach((t) => t.stop()); captureStream = null; }
-  $("capture").setAttribute("aria-pressed", "false");
-  $("captureLabel").textContent = "Capture call";
-  $("mic").disabled = false;
-  const orec = document.getElementById("overlayRec");
-  if (orec) orec.setAttribute("aria-pressed", "false");
-}
-
 /* ---------- Controls ---------- */
-function setSpeaker(s) {
+async function setSpeaker(s) {
+  const revision = setSpeaker.revision = (setSpeaker.revision || 0) + 1;
+  const restart = activeInput().active;
+  const kind = activeInput().session?.kind;
+  await stopListening();
+  if (setSpeaker.revision !== revision) return;
   app.speaker = s;
   document.querySelectorAll(".speaker button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.speaker === s)));
   $("typeIn").placeholder = s === "rep" ? "Type what you said" : "Type what the customer said";
+  if (restart) startListening(kind);
 }
 document.querySelectorAll(".speaker button").forEach((b) => b.addEventListener("click", () => setSpeaker(b.dataset.speaker)));
 document.addEventListener("keydown", (e) => {
-  if (e.metaKey || e.ctrlKey || e.altKey || document.activeElement?.tagName === "INPUT") return;
+  if (e.metaKey || e.ctrlKey || e.altKey || ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName) || document.querySelector("dialog[open]")) return;
   const k = e.key.toLowerCase();
-  if (k === "s") setSpeaker(app.speaker === "customer" ? "rep" : "customer");
+  if (k === "s" && workspaceMode !== "agent") setSpeaker(app.speaker === "customer" ? "rep" : "customer");
   if (k === "d") markCurrentDone();
 });
-$("mic").addEventListener("click", () => (app.listening ? stopListening() : startListening()));
-$("capture").addEventListener("click", () => (capturing ? stopCapture() : startCapture()));
+$("mic").addEventListener("click", async () => {
+  if (workspaceMode === "agent") {
+    voice.unlock().catch(() => {});
+    if (agentSession.active || agentSession.busy) { await agentSession.end(); return; }
+    const ready = providerConfig?.configured.openai && providerConfig?.configured.deepgram && (providerConfig?.sttProvider === "browser" || providerConfig?.configured.bandwidth);
+    if (!ready) { showError("Configure OpenAI, Deepgram, and your speech input in Settings first."); settingsPanel.open(); return; }
+    await agentSession.start();
+  } else await (activeInput().active ? stopListening() : startListening());
+});
+$("capture").addEventListener("click", () => (activeInput().active ? stopCapture() : startCapture()));
 $("pipBtn").addEventListener("click", () => (pipWin ? closePiP() : openPiP()));
 $("done").addEventListener("click", markCurrentDone);
-$("typeForm").addEventListener("submit", (e) => { e.preventDefault(); addTurn($("typeIn").value); $("typeIn").value = ""; });
+$("typeForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (agentSession.busy || !$("typeIn").value.trim()) return;
+  addTurn($("typeIn").value, { speaker: workspaceMode === "agent" ? "customer" : app.speaker });
+  $("typeIn").value = ""; renderConversation();
+  if (workspaceMode === "agent") { voice.unlock().catch(() => {}); agentSession.reply(); }
+});
 
-function resetCall() {
+async function resetCall() {
+  await agentSession.end(); assembler.reset();
   app.sampleId++;
-  clearTimeout(app.timer);
+  $("agentError").textContent = ""; $("agentError").hidden = true;
+  $("readAloud").disabled = true;
+  clearTimeout(app.timer); app.timer = null;
+  jevClient.clear(); app.resultKey = null; app.stageLabel = null;
+  $("agentGuidance").dataset.status = "waiting";
+  $("guidanceAction").textContent = "Waiting for a customer turn";
+  $("guidanceDetail").textContent = "Suggested actions will guide the next reply.";
   app.turns = []; app.memory = createMemory(); app.result = null; app.pending = false; app.lastSignals = null;
   showHeard("", "customer"); showError(""); $("doneMsg").textContent = "";
   $("sample").disabled = false;
-  renderStageIdle(); renderNextIdle();
+  $("conversationDialog").close();
+  renderStageIdle(); renderNextIdle(); renderConversation();
   if (overlayChannel) overlayChannel.postMessage({ type: "idle" });
 }
 $("reset").addEventListener("click", resetCall);
@@ -1032,8 +1116,7 @@ const SAMPLE = [
   ["customer", "My only worry is the migration. Last time we switched tools we lost a month of history."]
 ];
 $("sample").addEventListener("click", async () => {
-  if (app.listening) stopListening();
-  resetCall();
+  await resetCall();
   const id = app.sampleId;
   $("sample").disabled = true;
   for (const [speaker, text] of SAMPLE) {
@@ -1067,7 +1150,7 @@ if (isOverlay) {
       $("overlayMin").addEventListener("click", () => window.overlay.minimize());
     }
     const oRec = $("overlayRec");
-    if (oRec) oRec.addEventListener("click", () => (capturing ? stopCapture() : startCapture()));
+    if (oRec) oRec.addEventListener("click", () => (activeInput().active ? stopCapture() : startCapture()));
     $("overlayClear").addEventListener("click", resetCall);
     $("overlayTheme").addEventListener("click", () => setTheme(getTheme() === "dark" ? "light" : "dark"));
     if (window.overlay) {
@@ -1081,6 +1164,7 @@ if (isOverlay) {
         app.result = e.data.result;
         mainEl.style.setProperty("--stage", `var(--s${e.data.stageLevel})`);
         renderNext(e.data.result, true);
+        $("readAloud").disabled = false;
       }
       if (e.data.type === "idle") { app.result = null; renderNextIdle(); }
     };
@@ -1110,14 +1194,8 @@ if (isOverlay) {
 
 if (!isOverlay && "documentPictureInPicture" in window) $("pipBtn").hidden = false;
 
-fetch("/api/health").then((r) => r.json()).then((h) => {
-  $("setup").hidden = h.ready;
-  const canCapture = navigator.mediaDevices?.getDisplayMedia || window.overlay?.getSources;
-  if (h.canTranscribe && canCapture) {
-    $("capture").hidden = false;
-    if (isOverlay && overlayCard !== "next") $("overlayRec").hidden = false;
-  }
-}).catch(() => showError("Open this page through the local server (node server.mjs)."));
+document.querySelectorAll(".menu-items button").forEach(button => button.addEventListener("click", () => { $("sessionMenu").open = false; }));
+if (new URLSearchParams(location.search).has("settings")) settingsPanel.open();
 </script>
 </body>
 </html>

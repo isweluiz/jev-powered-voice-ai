@@ -3,25 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Call Coach Dashboard</title>
+<title>Osprey Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/settings.css">
 <style>
 /* Light is the default; dark is opt-in and shared with the overlay. */
 :root {
-  --bg: #edf0f4; --surface: #ffffff; --card: #f6f8fb; --ink: #172033;
-  --muted: #5e6a80; --faint: #8a94a7; --line: #d5dbe5;
-  --accent: #2743c9; --green: #178049; --warn: #a86c07; --stop: #b8322a;
-  --s0: #7d889c; --s1: #4b5fd1; --s2: #0f7f8c; --s3: #178049;
+  --bg: #f5fbfe; --surface: #ffffff; --card: #e6f5fd; --ink: #08121d;
+  --muted: #526878; --faint: #5b7283; --line: #d4e5ef;
+  --accent: #076ea8; --green: #037356; --warn: #b54e33; --stop: #b8322a;
+  --s0: #5b7283; --s1: #076ea8; --s2: #8b50b1; --s3: #037356;
   --btn-well: rgba(0,0,0,0.05); --btn-hover: rgba(0,0,0,0.11);
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --bg: #0e1220; --surface: #161d2e; --card: #1a2235; --ink: #e7ebf2;
-  --muted: #8a94a7; --faint: #5e6a80; --line: #252e42;
-  --accent: #8098ff; --green: #52c98e; --warn: #e0a53a; --stop: #f07167;
-  --s0: #8490a6; --s1: #8d9cff; --s2: #45c4d1; --s3: #52c98e;
+  --bg: #08121d; --surface: #082134; --card: #0d2b40; --ink: #f5fbfe;
+  --muted: #a7becf; --faint: #8ca7bb; --line: #24485e;
+  --accent: #079cee; --green: #00bf8c; --warn: #ff6f47; --stop: #f07167;
+  --s0: #8ca7bb; --s1: #38aff1; --s2: #ae7ad0; --s3: #00bf8c;
   --btn-well: rgba(255,255,255,0.06); --btn-hover: rgba(255,255,255,0.12);
   color-scheme: dark;
 }
@@ -160,7 +161,7 @@ body {
 }
 .input-strip input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
 .input-strip button {
-  border: none; background: var(--accent); color: #0e1422;
+  border: none; background: var(--accent); color: #08121d;
   border-radius: 8px; padding: 8px 18px; font: inherit; font-weight: 700; cursor: pointer;
 }
 .input-strip button:hover { filter: brightness(1.1); }
@@ -190,7 +191,7 @@ body {
 <body>
 
 <div class="titlebar">
-  <span>Call Coach Dashboard</span>
+  <span>Osprey Dashboard</span>
   <button id="clearBtn" title="Clear call">&#8635;</button>
   <button id="minBtn" title="Minimize">&#8211;</button>
   <button id="closeBtn" title="Close">&times;</button>
@@ -226,9 +227,9 @@ body {
     </div>
 
     <div class="signal-section">
-      <div class="panel-head">Speech Model</div>
-      <div class="model-picker" id="modelPicker"></div>
-      <div class="model-status" id="modelStatus"></div>
+      <div class="panel-head">Voice services</div>
+      <div class="model-status" id="providerStatus">Bandwidth STT · Deepgram TTS</div>
+      <button type="button" id="voiceSettings" class="ghost">Voice &amp; API settings</button>
     </div>
   </div>
 
@@ -242,13 +243,13 @@ body {
   </form>
 </div>
 
-<script>
-const channel = new BroadcastChannel("call-coach-sync");
+<script type="module">
+import { mountSettings, getSettings } from "/settings.js";
+const channel = new BroadcastChannel(`call-coach-sync:${(await getSettings()).user?.id || "local"}`);
 const transcript = document.getElementById("transcript");
 const emptyMsg = document.getElementById("emptyMsg");
 const signalList = document.getElementById("signalList");
 const historyList = document.getElementById("historyList");
-const history = [];
 
 function addBubble(speaker, text) {
   emptyMsg.hidden = true;
@@ -309,6 +310,7 @@ channel.onmessage = (e) => {
     addHistory(d.label, d.from, d.trend);
   }
   if (d.type === "sync") {
+    transcript.replaceChildren(emptyMsg);
     emptyMsg.hidden = d.turns.length > 0;
     for (const t of d.turns) addBubble(t.speaker, t.text);
     if (d.signals) renderSignals(d.signals);
@@ -349,92 +351,10 @@ if (window.overlay) {
   document.getElementById("minBtn").hidden = true;
 }
 
-const modelPicker = document.getElementById("modelPicker");
-const modelStatusEl = document.getElementById("modelStatus");
-let pollTimer = null;
-
-async function loadModels() {
-  try {
-    const res = await fetch("/api/models");
-    const data = await res.json();
-    modelPicker.innerHTML = "";
-    for (const m of data.models) {
-      const div = document.createElement("div");
-      div.className = "model-opt" + (m.id === data.current ? " active" : "");
-      div.dataset.id = m.id;
-      div.innerHTML = '<span class="model-name">' + m.label + '</span> ' + m.desc + '<span class="model-size">' + m.size + '</span>';
-      div.addEventListener("click", () => switchModel(m.id));
-      modelPicker.appendChild(div);
-    }
-    if (data.progress && data.progress.status === "downloading") {
-      showProgress(data.progress);
-      startPoll();
-    } else if (data.loaded) {
-      modelStatusEl.textContent = data.loaded === data.current ? "Loaded and ready" : "Will load on next transcription";
-    } else {
-      modelStatusEl.textContent = "Downloads on first use";
-    }
-  } catch {}
-}
-
-async function switchModel(id) {
-  const opts = modelPicker.querySelectorAll(".model-opt");
-  opts.forEach((o) => {
-    o.classList.toggle("active", o.dataset.id === id);
-    o.classList.remove("loading");
-  });
-  modelStatusEl.textContent = "Switching...";
-  try {
-    const res = await fetch("/api/models/switch", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: id }),
-    });
-    const data = await res.json();
-    if (data.status === "already_loaded") {
-      modelStatusEl.textContent = "Already loaded";
-      return;
-    }
-    const opt = modelPicker.querySelector('[data-id="' + id + '"]');
-    if (opt) opt.classList.add("loading");
-    startPoll();
-  } catch (err) {
-    modelStatusEl.textContent = "Error: " + err.message;
-  }
-}
-
-function showProgress(p) {
-  if (p.status === "downloading") {
-    modelStatusEl.innerHTML = "Downloading " + p.model.split("/").pop() + "... " + p.pct + "%" +
-      '<div class="model-bar"><div class="model-bar-fill" style="width:' + p.pct + '%"></div></div>';
-  } else if (p.status === "ready") {
-    modelStatusEl.textContent = "Loaded and ready";
-    modelPicker.querySelectorAll(".model-opt").forEach((o) => o.classList.remove("loading"));
-    stopPoll();
-    loadModels();
-  } else if (p.status === "error") {
-    modelStatusEl.textContent = "Error: " + (p.error || "failed to load");
-    modelPicker.querySelectorAll(".model-opt").forEach((o) => o.classList.remove("loading"));
-    stopPoll();
-  }
-}
-
-function startPoll() {
-  stopPoll();
-  pollTimer = setInterval(async () => {
-    try {
-      const res = await fetch("/api/models/progress");
-      const p = await res.json();
-      showProgress(p);
-    } catch {}
-  }, 800);
-}
-
-function stopPoll() {
-  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-}
-
-loadModels();
+const settings = mountSettings({ onChange(config) {
+  document.getElementById("providerStatus").textContent = `Bandwidth STT: ${config.configured.bandwidth ? "configured" : "key needed"} · Deepgram TTS: ${config.configured.deepgram ? "configured" : "key needed"}`;
+} });
+document.getElementById("voiceSettings").onclick = () => settings.open();
 </script>
 </body>
 </html>

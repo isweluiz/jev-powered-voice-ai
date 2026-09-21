@@ -1,0 +1,43 @@
+# Local credentials, including backups and temporary writes.
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+.npmrc
+secrets/
+credentials/
+*credentials*.json
+client_secret*.json
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+
+# Dependencies, output, logs and local runtime data.
+node_modules/
+coverage/
+dist/
+build/
+.cache/
+*.log
+*.pid
+*.sql.gz
+*.dump
+pgdata/
+postgres-data/
+
+# Workstation files and local assistant artifacts.
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.codex/
+.agents/
+*.swp
+*.swo
+core
+core.*

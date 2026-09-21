@@ -1,0 +1,2 @@
+# Existing HTML uses CRLF; retain other whitespace checks.
+*.html whitespace=trailing-space,space-before-tab,cr-at-eol
