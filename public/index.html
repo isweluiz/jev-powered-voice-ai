@@ -390,7 +390,7 @@ body.card-next main.pip summary { -webkit-app-region: no-drag; }
    product default; the OS preference only applies if the user has
    actively chosen "system". */
 (function () {
-  var KEY = "cc-theme";
+  var KEY = "cayana-theme";
   var t;
   try { t = localStorage.getItem(KEY); } catch (e) {}
   if (t === "system") {
@@ -399,6 +399,7 @@ body.card-next main.pip summary { -webkit-app-region: no-drag; }
   document.documentElement.setAttribute("data-theme", t === "dark" ? "dark" : "light");
 })();
 </script>
+<link rel="stylesheet" href="/shell.css">
 </head>
 <body>
 
@@ -486,6 +487,7 @@ body.card-next main.pip summary { -webkit-app-region: no-drag; }
     <div class="voice-channel-actions"><button type="button" class="ghost" id="generateReply" hidden disabled>Generate reply</button><button type="button" class="ghost" id="readAloud" disabled>Read aloud</button><button type="button" class="ghost" id="pauseVoice" hidden>Pause voice</button><button type="button" class="ghost" id="stopVoice" hidden>Stop voice</button></div>
     <div class="agent-latest-reply" id="agentLatestReply" hidden><span>Latest reply</span><p id="latestReplyText" aria-live="polite"></p></div>
   </section>
+  <section class="decision-signals" id="decisionSignals" hidden aria-label="Jev decision signals"><div class="decision-signals-heading"><strong>What Jev is picking up</strong><span>Signals from this conversation</span></div><div id="signalReadings"></div></section>
   <p id="agentError" class="agent-error" role="alert" hidden></p>
   <section class="agent-panel" id="agentPanel" hidden>
     <button type="button" class="conversation-open" id="openConversation" aria-haspopup="dialog"><span class="conversation-heading">Conversation <span id="conversationCount">0 messages</span></span><span class="conversation-toggle">View transcript <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 4 4 4-4 4"/></svg></span></button>
@@ -510,7 +512,9 @@ body.card-next main.pip summary { -webkit-app-region: no-drag; }
 
 <script type="module">
 import { decide, trackStage, createMemory, markDone, DEFAULT_CONFIG } from "/decide.js";
-import { PLAYBOOK } from "/playbook.js";
+import { PLAYBOOK as SALES_PLAYBOOK } from "/playbook.js";
+import { getTemplate, templatePlaybook } from "/templates.js";
+import { mountShell } from "/shell.js";
 import { AgentSession } from "/agent-session.js";
 import { JevClient, transcriptKey } from "/jev-client.js";
 import { VoiceWaveform } from "/waveform.js";
@@ -521,6 +525,15 @@ import { BandwidthSpeech, BrowserSpeech, TranscriptAssembler, DeepgramSpeech } f
 let pipWin = null;
 const $ = (id) => document.getElementById(id) || pipWin?.document.getElementById(id) || null;
 const mainEl = document.querySelector("main");
+const initialConfig = await getSettings().catch(error => {
+  $("setup").hidden = false; $("setup").textContent = error.message;
+  $("mic").disabled = true; $("typeIn").disabled = true;
+  throw error;
+});
+const sectorTemplate = getTemplate(initialConfig.workspaceAgent?.templateId);
+const PLAYBOOK = sectorTemplate ? templatePlaybook(sectorTemplate) : SALES_PLAYBOOK;
+const stageLabel = sectorTemplate?.stageLabel || "Buying stage";
+document.querySelector(".hero-kicker").textContent = stageLabel;
 const STAGES = PLAYBOOK.stages;
 const N = STAGES.length;
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -538,13 +551,15 @@ const app = {
 const _qp = new URLSearchParams(location.search);
 const isOverlay = _qp.has("overlay");
 const overlayCard = _qp.get("card");
+const shell = !isOverlay ? mountShell({ active: location.pathname === "/talk" ? "talk" : "coach", onSettings: () => settingsPanel.open() }) : null;
+if (initialConfig.development && shell) $("workspaceKind").textContent = "Local development";
 const overlayChannel = isOverlay ? new BroadcastChannel(`call-coach-sync:${(await getSettings()).user?.id || "local"}`) : null;
 
 /* ---------- Theme ----------
    Light is the default. The choice is shared across every window
    (overlay cards, dashboard, pop-out) over its own channel, so the
    two cards never end up disagreeing. */
-const THEME_KEY = "cc-theme";
+const THEME_KEY = "cayana-theme";
 const themeChannel = new BroadcastChannel("call-coach-theme");
 
 function getTheme() {
@@ -608,7 +623,7 @@ function renderStageIdle() {
   $("marker").style.opacity = "0"; $("spread").style.opacity = "0";
   [...$("stageLabels").children].forEach((li) => { li.removeAttribute("aria-current"); li.className = ""; });
   $("stageCount").textContent = "";
-  $("track").setAttribute("aria-label", "No buying stage yet");
+  $("track").setAttribute("aria-label", `No ${stageLabel.toLowerCase()} yet`);
 }
 
 function renderStage(st) {
@@ -728,6 +743,7 @@ function applyEvaluation(data, key) {
 
     const stage = trackStage(data.answers.buying_stage, app.memory.stage, STAGES);
     app.result = decide(data.answers, PLAYBOOK, app.memory);
+    if (sectorTemplate) renderSignals(data.answers);
     if (stage) renderStage(stage);
     renderNext(app.result, !stage?.changed);
     $("readAloud").disabled = false;
@@ -757,7 +773,7 @@ function applyEvaluation(data, key) {
     }
 
     const parts = [];
-    if (stage?.changed) parts.push(`Buying stage: ${stage.label}${stage.from ? `, moved ${stage.trend} from ${stage.from}` : ""}. Score ${stage.buyingScore}.`);
+    if (stage?.changed) parts.push(`${stageLabel}: ${stage.label}${stage.from ? `, moved ${stage.trend} from ${stage.from}` : ""}. Score ${stage.buyingScore}.`);
     if (app.result.status === "act" && app.result.changed) parts.push(`Next step: ${app.result.title}.`);
     if (parts.length) $("announce").textContent = parts.join(" ");
     app.resultKey = key; app.stageLabel = stage?.label || null;
@@ -989,6 +1005,8 @@ function renderConversation() {
 async function setWorkspaceMode(mode) {
   await agentSession.end();
   workspaceMode = mode; document.body.dataset.mode = mode;
+  shell?.setActive(mode === "agent" ? "talk" : "coach");
+  if (!isOverlay) history.replaceState(null, "", (mode === "agent" ? "/talk" : "/coach") + location.search);
   $("agentPanel").hidden = mode !== "agent";
   $("agentGuidance").hidden = mode !== "agent";
   $("editAgent").hidden = mode !== "agent";
@@ -996,9 +1014,9 @@ async function setWorkspaceMode(mode) {
   if (mode !== "agent") $("conversationDialog").close();
   $("coachMode").setAttribute("aria-pressed", String(mode === "coach"));
   $("agentMode").setAttribute("aria-pressed", String(mode === "agent"));
-  $("sessionTitle").textContent = mode === "agent" ? "Voice agent session" : "Live call coaching";
-  $("sessionDescription").textContent = mode === "agent" ? "Qualify leads with your prompt, model, and voice." : "Listen, understand intent, and guide the next step.";
-  $("sample").disabled = mode === "agent";
+  $("sessionTitle").textContent = initialConfig.workspaceAgent?.name || (mode === "agent" ? "Voice agent session" : "Live call coaching");
+  $("sessionDescription").textContent = sectorTemplate ? `${sectorTemplate.sector} · Browser voice · Jev decision guidance` : mode === "agent" ? "Your prompt, your voice, and a clearer next step." : "Listen, understand intent, and guide the next step.";
+  $("sample").disabled = mode === "agent" || Boolean(sectorTemplate);
   $("micLabel").textContent = mode === "agent" ? "Start voice session" : "Start listening";
   app.speaker = "customer";
   $("typeIn").placeholder = mode === "agent" ? "Send a message to your agent…" : "Type what the customer said";
@@ -1008,6 +1026,18 @@ async function setWorkspaceMode(mode) {
 $("coachMode").onclick = () => setWorkspaceMode("coach");
 $("agentMode").onclick = () => setWorkspaceMode("agent");
 $("editAgent").onclick = () => settingsPanel.open("agent");
+function renderSignals(answers = {}) {
+  if (!sectorTemplate) return;
+  $("decisionSignals").hidden = false;
+  $("signalReadings").replaceChildren(...[...sectorTemplate.signals.map((label, i) => [label, `signal_${i}`]), ["Human attention", "needs_human"]].map(([label, key]) => {
+    const item = document.createElement("div"), title = document.createElement("span"), value = document.createElement("strong");
+    title.textContent = label;
+    const probability = answers[key]?.noul;
+    value.textContent = Number.isFinite(probability) ? `${Math.round(Math.min(1, Math.max(0, probability)) * 100)}% likelihood` : "Waiting for context";
+    item.dataset.active = String(Number.isFinite(probability) && probability >= .7);
+    item.append(title, value); return item;
+  }));
+}
 $("openConversation").onclick = () => {
   $("conversationDialog").showModal();
   $("agentMessages").scrollTop = $("agentMessages").scrollHeight;
@@ -1099,7 +1129,8 @@ async function resetCall() {
   $("guidanceDetail").textContent = "Suggested actions will guide the next reply.";
   app.turns = []; app.memory = createMemory(); app.result = null; app.pending = false; app.lastSignals = null;
   showHeard("", "customer"); showError(""); $("doneMsg").textContent = "";
-  $("sample").disabled = false;
+  $("sample").disabled = workspaceMode === "agent" || Boolean(sectorTemplate);
+  renderSignals();
   $("conversationDialog").close();
   renderStageIdle(); renderNextIdle(); renderConversation();
   if (overlayChannel) overlayChannel.postMessage({ type: "idle" });
@@ -1192,6 +1223,8 @@ if (isOverlay) {
   }
 }
 
+if (!isOverlay) await setWorkspaceMode(location.pathname === "/coach" || location.pathname === "/index.html" ? "coach" : "agent");
+renderSignals();
 if (!isOverlay && "documentPictureInPicture" in window) $("pipBtn").hidden = false;
 
 document.querySelectorAll(".menu-items button").forEach(button => button.addEventListener("click", () => { $("sessionMenu").open = false; }));

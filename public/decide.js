@@ -125,6 +125,15 @@ export function decide(answers, playbook, memory, now = Date.now(), config = DEF
   const signals = {};
   for (const [key, a] of Object.entries(answers)) if (a?.type === "noul") signals[key] = a.noul;
 
+  // A playbook escalation takes precedence over ordinary next-step ranking.
+  for (const rule of playbook.rules || []) {
+    if (!rule.force || !rule.when(signals) || !playbook.actions[rule.force]) continue;
+    const action = playbook.actions[rule.force], changed = memory.current !== rule.force;
+    memory.current = rule.force; memory.challenger = null; memory.streak = 0;
+    return { status: "act", action: rule.force, title: action.title, score: rule.score(signals),
+      tips: pickTips(action, signals, 3, config), changed, note: rule.note };
+  }
+
   // 1. Skip done and blocked options
   const skipped = new Set();
   for (const [key, until] of Object.entries(memory.done)) {

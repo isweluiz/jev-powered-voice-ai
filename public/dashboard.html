@@ -174,14 +174,14 @@ body {
 <script>
 (function () {
   var t;
-  try { t = localStorage.getItem("cc-theme"); } catch (e) {}
+  try { t = localStorage.getItem("cayana-theme"); } catch (e) {}
   if (t === "system") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", t === "dark" ? "dark" : "light");
   try {
     new BroadcastChannel("call-coach-theme").onmessage = function (e) {
       if (e.data && e.data.theme) {
         document.documentElement.setAttribute("data-theme", e.data.theme);
-        try { localStorage.setItem("cc-theme", e.data.theme); } catch (err) {}
+        try { localStorage.setItem("cayana-theme", e.data.theme); } catch (err) {}
       }
     };
   } catch (e) {}

@@ -19,7 +19,7 @@ async function listen(server) {
 }
 // Deliberately injected through createApp; no fake identity path exists in production.
 function memoryStore() {
-  const users = new Map(), preferences = new Map(), sessions = new Map(), transactions = new Map();
+  const users = new Map(), preferences = new Map(), sessions = new Map(), transactions = new Map(), agents = new Map();
   return {
     users, preferences, sessions, transactions,
     async init() {}, async close() {}, async cleanup() {},
@@ -42,6 +42,12 @@ function memoryStore() {
     },
     async deleteSession(hash) { sessions.delete(hash); },
     async savePreferences(id, value) { preferences.set(id, structuredClone(value)); },
+    async listAgents(owner) { return [...agents.values()].filter(row => row.owner === owner).map(row => row.agent); },
+    async getAgent(owner, id) { const row = agents.get(id); return row?.owner === owner ? structuredClone(row.agent) : null; },
+    async saveAgent(owner, agent, { create = false } = {}) {
+      if (!create && agents.get(agent.id)?.owner !== owner) return null;
+      agents.set(agent.id, { owner, agent: structuredClone(agent) }); return agent;
+    },
   };
 }
 async function fixture(t, env = {}) {
@@ -234,4 +240,31 @@ test('deployment URL requires HTTPS except localhost, and local mode cannot bind
   assert.equal(publicOrigin('https://osprey.example/'), canonical);
   for (const value of ['http://osprey.example', 'https://user:pass@osprey.example', 'https://osprey.example/path', 'https://osprey.example?x=1']) assert.throws(() => publicOrigin(value));
   await assert.rejects(createApp({ env: { AUTH_MODE: 'local', HOST: '0.0.0.0' }, envPath: '/nonexistent-osprey-env' }), /Local mode cannot/);
+});
+
+test('saved web agents are owned by their account and cannot select another user’s prompt', async t => {
+  const f = await fixture(t), alice = await f.login('alice'), bob = await f.login('bob');
+  assert.equal((await f.request('/api/agents')).status, 401);
+  assert.equal((await f.post(alice, '/api/agents', { name: 'Alice service desk', templateId: 'it-support' }, { 'X-Call-Coach-Token': '' })).status, 403);
+  const created = await f.post(alice, '/api/agents', { name: 'Alice service desk', templateId: 'it-support', company: 'Alice Labs', userId: bob.settings.user.id });
+  assert.equal(created.status, 201);
+  const { agent } = await created.json();
+  assert.equal((await f.request('/api/agents', { headers: { Cookie: bob.cookie } }).then(r => r.json())).agents.length, 0);
+  const foreign = '/api/agents/' + agent.id;
+  assert.equal((await f.request(foreign, { headers: { Cookie: bob.cookie } })).status, 404);
+  assert.equal((await f.post(bob, foreign, { name: 'Hijacked' })).status, 404);
+  assert.equal((await f.request('/api/settings?agentId=' + agent.id, { headers: { Cookie: bob.cookie } })).status, 404);
+  assert.equal((await f.post(bob, '/api/reply', { agentId: agent.id, turns: [{ speaker: 'customer', text: 'Help me' }] })).status, 404);
+  assert.equal(f.calls.length, 0);
+  const saved = await f.post(alice, '/api/settings', { agentId: agent.id, agent: { systemPrompt: 'Private IT specialist for Alice.' }, voice: 'aura-2-draco-en' });
+  assert.equal(saved.status, 200);
+  const prefs = await saved.json();
+  assert.equal(prefs.storage, 'agent');
+  assert.equal(prefs.voice, 'aura-2-draco-en');
+  assert.equal(prefs.workspaceAgent.templateId, 'it-support');
+  assert.equal((await f.request(foreign, { headers: { Cookie: alice.cookie } }).then(r => r.json())).agent.systemPrompt, 'Private IT specialist for Alice.');
+  assert.equal((await f.request('/api/settings', { headers: { Cookie: alice.cookie } }).then(r => r.json())).agent.systemPrompt, alice.settings.agent.systemPrompt);
+  assert.equal((await f.post(alice, '/api/reply', { agentId: agent.id, turns: [{ speaker: 'customer', text: 'My laptop cannot connect' }] })).status, 200);
+  assert.match(f.calls[0].body.instructions, /Private IT specialist for Alice/);
+  assert.equal((await f.post(alice, '/api/agents', { name: 'Unknown sector', templateId: 'untrusted-template' })).status, 400);
 });

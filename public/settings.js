@@ -1,5 +1,6 @@
 let current;
 let loading;
+export const activeAgentId = new URLSearchParams(location.search).get('agent');
 const changes = new BroadcastChannel('call-coach-settings');
 const listeners = new Set();
 function checkSession(response) {
@@ -10,9 +11,9 @@ function checkSession(response) {
   return response;
 }
 export async function loadSettings() {
-  if (!loading) loading = fetch('/api/settings', { cache: 'no-store' }).then(async res => {
+  if (!loading) loading = fetch('/api/settings' + (activeAgentId ? '?agentId=' + encodeURIComponent(activeAgentId) : ''), { cache: 'no-store' }).then(async res => {
     checkSession(res);
-    if (!res.ok) throw new Error('Could not load settings. Reload the page.');
+    if (!res.ok) throw new Error(res.status === 404 ? 'This agent is unavailable. Open My agents to choose another.' : 'Could not load settings. Reload the page.');
     const next = await res.json();
     if (current?.user?.id && current.user.id !== next.user?.id) {
       location.reload();
@@ -28,7 +29,8 @@ export async function getSettings() { return current || loadSettings(); }
 export async function apiPost(path, payload, { signal } = {}) {
   const config = await getSettings();
   const response = checkSession(await fetch(path, { method: 'POST', signal,
-    headers: { 'Content-Type': 'application/json', 'X-Call-Coach-Token': config.csrfToken }, body: JSON.stringify(payload) }));
+    headers: { 'Content-Type': 'application/json', 'X-Call-Coach-Token': config.csrfToken },
+    body: JSON.stringify(activeAgentId && ['/api/settings', '/api/evaluate', '/api/reply', '/api/tts'].includes(path) ? { ...payload, agentId: activeAgentId } : payload) }));
   if (path === '/api/auth/logout' && response.ok) changes.postMessage('signed-out');
   return response;
 }
@@ -75,7 +77,7 @@ export function mountSettings({ onChange = () => {}, onTestVoice } = {}) {
   const el = id => dialog.querySelector('#' + id);
   const clearInputs = () => { for (const [id] of providers) { el(id + 'Key').value = ''; el(id + 'Remove').checked = false; } el('rememberKeys').checked = false; };
   function render(config) {
-    const account = config.storage === 'account';
+    const account = ['account', 'agent'].includes(config.storage);
     const manageKeys = config.canManageKeys !== false;
     el('connectionsNote').textContent = manageKeys
       ? 'Provider keys are shared by the workspace. They stay on the server and are never returned to the browser.'
@@ -83,7 +85,7 @@ export function mountSettings({ onChange = () => {}, onTestVoice } = {}) {
     el('rememberChoice').hidden = !manageKeys;
     el('rememberLabel').textContent = account ? 'Save changed provider keys on the server' : 'Remember on this computer';
     el('storageNote').textContent = account
-      ? 'Your agent and voice preferences are saved to your account.' + (manageKeys ? ' Provider key changes stay in memory unless saved to the server’s private .env file. Blank fields keep existing keys.' : '')
+      ? (config.storage === 'agent' ? 'These preferences are saved to this web agent.' : 'Your agent and voice preferences are saved to your account.') + (manageKeys ? ' Provider key changes stay in memory unless saved to the server’s private .env file. Blank fields keep existing keys.' : '')
       : 'Off: session only. On: keys and preferences are saved in a local plaintext .env file with owner-only permissions, excluded from Git. Blank key fields keep existing keys.';
     for (const [id] of providers) {
       el(id + 'Status').textContent = config.configured[id] ? 'Key configured' : 'Key needed';
@@ -135,7 +137,7 @@ export function mountSettings({ onChange = () => {}, onTestVoice } = {}) {
       current = data; clearInputs(); render(data);
       for (const listener of listeners) listener(data);
       changes.postMessage('updated');
-      el('settingsMessage').textContent = data.storage === 'account' ? 'Preferences saved to your account.' : data.persisted ? 'Applied and saved on this computer.' : 'Applied for this server session.';
+      el('settingsMessage').textContent = data.storage === 'agent' ? 'Web agent updated.' : data.storage === 'account' ? 'Preferences saved to your account.' : data.persisted ? 'Applied and saved on this computer.' : 'Applied for this server session.';
     } catch (e) { el('settingsMessage').textContent = e.message; }
     finally { for (const key of Object.keys(keys)) delete keys[key]; button.disabled = false; }
   };

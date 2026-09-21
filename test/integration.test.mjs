@@ -8,6 +8,7 @@ import path from 'node:path';
 import WebSocket, { WebSocketServer } from 'ws';
 import { createApp } from '../server.mjs';
 import { createSettings } from '../lib/settings.mjs';
+import { getTemplate, templatePlaybook } from '../public/templates.js';
 
 const listen = async server => { server.listen(0, '127.0.0.1'); await once(server, 'listening'); return `http://127.0.0.1:${server.address().port}`; };
 const dummy = { bandwidth: 'bwa_test_key_12345678', deepgram: 'deepgram_test_key_12345678', jev: 'jev_test_key_12345678', openai: 'sk_test_key_12345678' };
@@ -61,6 +62,30 @@ async function fixture(t) {
   });
   return { app, origin, post, initial, calls, frames, dir, mode: value => { mode = value; }, releaseAudio: () => releaseAudio?.(), get wsHeaders() { return wsHeaders; }, get wsUrl() { return wsUrl; } };
 }
+
+test('sector agent context reaches Jev, the reply model, and the configured voice without replacing workspace defaults', async t => {
+  const f = await fixture(t);
+  await f.post('/api/settings', { keys: dummy });
+  const response = await f.post('/api/agents', { name: 'Freight intake', templateId: 'logistics', company: 'Acme Freight', knowledge: 'Road freight only.', voice: 'aura-2-draco-en', model: 'gpt-4.1-mini' });
+  assert.equal(response.status, 201);
+  const { agent } = await response.json();
+  const turns = [{ speaker: 'customer', text: 'I have a pallet to ship next week.' }];
+  assert.equal((await f.post('/api/evaluate', { turns, agentId: agent.id })).status, 200);
+  assert.match(f.calls[0].body.questions.buying_stage.instructions, /shipment brief/);
+  assert.equal(f.calls[0].body.state.agent_context.company, 'Acme Freight');
+  assert.equal(f.calls[0].body.state.sales_call_transcript[0].text, turns[0].text);
+  const item = templatePlaybook(getTemplate('logistics')).actions.qualify;
+  const reply = await f.post('/api/reply', { agentId: agent.id, turns, guidance: { status: 'act', action: 'qualify', tips: item.tips.always, stage: 'Route understood', score: .8 } });
+  assert.equal(reply.status, 200);
+  assert.match(f.calls[1].body.instructions, /Road freight only/);
+  assert.match(f.calls[1].body.instructions, /Capture the constraints/);
+  assert.equal((await f.post('/api/tts', { agentId: agent.id, text: 'Where does it need to go?' })).status, 200);
+  assert.match(f.calls[2].url, /model=aura-2-draco-en/);
+  assert.equal((await fetch(f.origin + '/api/settings').then(r => r.json())).voice, f.initial.voice);
+  assert.equal((await f.post('/api/reply', { agentId: agent.id, turns, guidance: { status: 'act', action: 'book_demo' } })).status, 400);
+  assert.equal(f.calls.length, 3);
+  for (const route of ['/', '/talk', '/coach', '/agents', '/templates', '/agents/new']) assert.equal((await fetch(f.origin + route)).status, 200);
+});
 
 test('settings are secret-free, session-only by default, and reject cross-origin/CSRF requests', async t => {
   const f = await fixture(t);

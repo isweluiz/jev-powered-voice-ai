@@ -35,6 +35,40 @@ recognition** for microphone input. Browser recognition needs no STT key, depend
 on the browser's speech service, and stops on connection errors instead of retrying
 indefinitely. Bandwidth is the default; there is no silent provider fallback.
 
+## Conversation workspace and web agents
+
+After sign-in, Home opens a sidebar workspace using the same light sky palette as
+the login page. **Start talking** opens the existing voice agent with your account’s
+default prompt and voice. **Live coach** retains the compact coaching dashboard,
+capture controls, waveform, and conversation tools.
+
+**Create web agent** opens a builder with six sector templates: sales discovery,
+customer service, IT support, logistics, hospitality, and field service. Each
+contains an editable system prompt, a conversation objective, sector-specific Jev
+questions, four progress stages, suggested actions, and a human-attention signal.
+Add company facts, select a voice and speech provider, then save or open the agent
+in Talk. My agents supports reopening and editing saved configurations.
+
+For a saved agent, the server resolves ownership before reading its configuration
+or calling a provider. Jev evaluates that agent’s sector questions; the matching
+playbook supplies bounded guidance to the reply model. The voice workspace shows
+the sector’s progress stages and signal probabilities. A human-attention probability
+of at least 0.7 prioritizes **Involve a person**, including after an ordinary
+suggestion was marked done. This is a conversational recommendation, not an actual
+transfer or an authorization to perform an external action.
+
+Google accounts store private agents in PostgreSQL (`002-agents.sql`). Local and
+developer mode store them in `.cayana/agents.json`, with owner-only file permissions;
+the directory is excluded from Git. Agent prompts and voice preferences persist
+independently of account defaults. Provider keys remain shared server connections.
+Conversations still live only in browser memory.
+
+These are authenticated browser voice agents. Public website embedding, phone
+numbers, inbound/outbound telephone calls, CRM updates, bookings, and call transfers
+are not implemented. There are no fabricated usage or performance statistics in
+the home screen; connection indicators report whether keys are configured, not a
+live provider health check.
+
 ## Google sign-in and accounts
 
 The minimalist login screen is at `/login`. Authentication is required by default,
@@ -248,14 +282,22 @@ server.mjs              HTTP server, authentication gates and provider proxies
 compose.yaml            PostgreSQL container with a persistent volume
 docker/init-db.sh       Least-privilege app database/user initialization
 migrations/001-auth.sql Users, preferences, sessions and login transactions
+migrations/002-agents.sql Private per-user web agents
 lib/auth.mjs            Google OAuth, identity policy and session lifecycle
+lib/agents.mjs          Agent validation and private local development storage
 lib/database.mjs        Parameterized PostgreSQL store and migrations
 lib/runtime.mjs         Environment loading and capacity configuration
 lib/agent.mjs           OpenAI Responses integration and prompt handling
 lib/settings.mjs        Session configuration and optional .env persistence
 lib/bandwidth.mjs       Authenticated Bandwidth WebSocket relay
 schema.json             Jev questions
-public/index.html       Main coaching interface
+public/home.html        Home, template gallery, agent list and builder
+public/home.js          Agent creation, editing and workspace navigation
+public/home.css         Light workspace and builder layout
+public/shell.js         Shared sidebar and account navigation
+public/shell.css        Responsive sidebar and shared workspace styling
+public/templates.js     Sector prompts, Jev questions and decision playbooks
+public/index.html       Voice-agent and live-coach conversation workspace
 public/login.html       Minimal Google sign-in screen
 public/login.css        Responsive sky background and translucent card
 public/login.js         Google sign-in availability and error handling

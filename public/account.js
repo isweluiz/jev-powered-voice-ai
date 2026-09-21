@@ -7,7 +7,7 @@ getSettings().then(config => {
   document.getElementById('accountName').textContent = config.user.name || config.user.email;
   account.querySelector('summary').title = config.user.email;
   document.getElementById('accountEmail').textContent = config.user.email;
-  document.getElementById('accountRole').textContent = config.storage === 'development' ? 'Development · Local administrator' : config.user.role === 'admin' ? 'Administrator' : 'Member';
+  document.getElementById('accountRole').textContent = config.development || config.storage === 'development' ? 'Development · Local administrator' : config.user.role === 'admin' ? 'Administrator' : 'Member';
 }).catch(() => {});
 document.addEventListener('click', event => { if (!account.contains(event.target)) account.open = false; });
 account.addEventListener('keydown', event => { if (event.key === 'Escape') { account.open = false; account.querySelector('summary').focus(); } });

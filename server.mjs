@@ -10,6 +10,8 @@ import { attachBandwidth } from './lib/bandwidth.mjs';
 import { generateReply } from './lib/agent.mjs';
 import { createAuth, sameToken } from './lib/auth.mjs';
 import { loadEnvironment, connectionLimit } from './lib/runtime.mjs';
+import { createLocalAgentStore, validateAgent, newAgent, agentId } from './lib/agents.mjs';
+import { getTemplate, templateQuestions, templatePlaybook } from './public/templates.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(HERE, 'public');
@@ -48,6 +50,7 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
   if (env.AUTH_MODE === 'local' && env.HOST && !['127.0.0.1', 'localhost', '::1'].includes(env.HOST)) throw new Error('Local mode cannot listen on a network interface.');
   const settings = await createSettings(envPath, env);
   const auth = await createAuth({ env, store: authStore, google });
+  const agents = auth.enabled && !auth.development ? auth.store : createLocalAgentStore(path.join(path.dirname(envPath), '.cayana'));
   const token = randomBytes(32).toString('hex');
   const model = env.TYPESAFE_MODEL || 'jev-latest';
   const jevEndpoint = endpoints.jev || 'https://api.typesafe.ai/v1/systemone';
@@ -80,14 +83,23 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
   async function authenticate(req) {
     return auth.enabled ? auth.authenticate(req) : { user: { id: 'local', role: 'admin' }, csrfToken: token, preferences: {}, expiresAt: null };
   }
-  function settingsFor(session) {
+  async function ownedAgent(session, id) {
+    if (id == null) return null;
+    const agent = await agents.getAgent(session.user.id, agentId(id));
+    if (!agent) throw error('Agent not found.', 404);
+    return agent;
+  }
+  function settingsFor(session, agent = null) {
     const base = settings.status();
     const status = auth.enabled && !auth.development ? { ...base, ...validatePreferences(session.preferences, base) } : base;
+    if (agent) Object.assign(status, { voice: agent.voice, sttProvider: agent.sttProvider, agent: { model: agent.model, systemPrompt: agent.systemPrompt },
+      workspaceAgent: { id: agent.id, name: agent.name, templateId: agent.templateId, goal: agent.goal } });
     return { key: settings.key, voice: () => status.voice, status: () => status };
   }
   function statusFor(session, view) {
     return { ...view.status(), csrfToken: session.csrfToken, user: auth.enabled ? session.user : null,
-      storage: auth.development ? 'development' : auth.enabled ? 'account' : 'local', canManageKeys: session.user.role === 'admin' };
+      storage: view.status().workspaceAgent ? 'agent' : auth.development ? 'development' : auth.enabled ? 'account' : 'local',
+      development: Boolean(auth.development), canManageKeys: session.user.role === 'admin' };
   }
   async function staticFile(res, requested) {
     const resolved = path.resolve(PUBLIC, '.' + requested);
@@ -97,12 +109,15 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
     }
     return false;
   }
-  async function askJev(turns, signal) {
+  async function askJev(turns, signal, agent) {
     const key = settings.key('jev');
+    const template = agent ? getTemplate(agent.templateId) : null;
     for (let attempt = 0; ; attempt++) {
       const response = await fetch(jevEndpoint, { method: 'POST',
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, state: { sales_call_transcript: turns }, questions: QUESTIONS }),
+        body: JSON.stringify({ model, state: { sales_call_transcript: turns,
+          ...(agent ? { agent_context: { company: agent.company, goal: agent.goal, sector: template.sector } } : {}) },
+          questions: template ? templateQuestions(template) : QUESTIONS }),
         signal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]), redirect: 'error' });
       if ([429, 529].includes(response.status) && attempt < 3) {
         const delay = Number(response.headers.get('retry-after'));
@@ -169,10 +184,38 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
         res.setHeader('Set-Cookie', cookie); return sendJson(res, 200, { signedOut: true });
       }
       const view = settingsFor(session);
-      if (req.method === 'GET' && url.pathname === '/api/settings') return sendJson(res, 200, statusFor(session, view));
+      if (url.pathname === '/api/agents' && req.method === 'GET') {
+        const owned = await agents.listAgents(session.user.id);
+        return sendJson(res, 200, { agents: owned.map(({ id, name, templateId, company, updatedAt }) => ({ id, name, templateId, company, updatedAt })) });
+      }
+      if (url.pathname === '/api/agents' && req.method === 'POST') {
+        if ((await agents.listAgents(session.user.id)).length >= 50) throw error('This account has reached the limit of 50 agents. Edit an existing agent.', 409);
+        const agent = newAgent(validateAgent(await readJson(req), view.status()));
+        return sendJson(res, 201, { agent: await agents.saveAgent(session.user.id, agent, { create: true }) });
+      }
+      if (url.pathname.startsWith('/api/agents/') && ['GET', 'POST'].includes(req.method)) {
+        const existing = await ownedAgent(session, url.pathname.slice('/api/agents/'.length));
+        if (req.method === 'GET') return sendJson(res, 200, { agent: existing });
+        const config = validateAgent({ ...existing, ...await readJson(req) }, view.status());
+        const agent = { ...existing, ...config, updatedAt: new Date().toISOString() };
+        return sendJson(res, 200, { agent: await agents.saveAgent(session.user.id, agent) });
+      }
+      if (req.method === 'GET' && url.pathname === '/api/settings') return sendJson(res, 200, statusFor(session, settingsFor(session, await ownedAgent(session, url.searchParams.get('agentId')))));
       if (req.method === 'POST' && url.pathname === '/api/settings') {
         const change = await readJson(req);
+        const agent = await ownedAgent(session, change.agentId);
         try {
+          if (agent) {
+            if (change.keys != null && (typeof change.keys !== 'object' || Array.isArray(change.keys))) throw error('Invalid keys.');
+            if (change.persist != null && typeof change.persist !== 'boolean') throw error('Invalid storage choice.');
+            const updateKeys = (change.keys && Object.keys(change.keys).length) || change.persist;
+            if (updateKeys && session.user.role !== 'admin') return sendJson(res, 403, { error: 'Only an administrator can change provider keys.' });
+            const preferences = validatePreferences(change, settingsFor(session, agent).status());
+            if (updateKeys) await settings.update({ keys: change.keys, persist: change.persist });
+            const saved = await agents.saveAgent(session.user.id, { ...agent, voice: preferences.voice, sttProvider: preferences.sttProvider,
+              model: preferences.agent.model, systemPrompt: preferences.agent.systemPrompt, updatedAt: new Date().toISOString() });
+            return sendJson(res, 200, { ...statusFor(session, settingsFor(session, saved)), persisted: true });
+          }
           if (auth.enabled && !auth.development) {
             if (change.keys != null && (typeof change.keys !== 'object' || Array.isArray(change.keys))) throw error('Invalid keys.');
             if (change.persist != null && typeof change.persist !== 'boolean') throw error('Invalid storage choice.');
@@ -198,18 +241,22 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
       });
       if (req.method === 'POST' && url.pathname === '/api/evaluate') {
         if (!settings.key('jev')) throw error('Add your Jev API key in Settings.', 503);
-        const clean = cleanTurns((await readJson(req)).turns);
+        const input = await readJson(req);
+        const agent = await ownedAgent(session, input.agentId);
+        const clean = cleanTurns(input.turns);
         if (!clean.some(t => t.speaker === 'customer')) throw error('Add at least one thing the customer said.');
         const started = performance.now();
         const controller = new AbortController();
         const abort = () => { if (!res.writableEnded) controller.abort(); };
         res.on('close', abort);
-        try { return sendJson(res, 200, { ...await askJev(clean, controller.signal), latency_ms: Math.round(performance.now() - started) }); }
+        try { return sendJson(res, 200, { ...await askJev(clean, controller.signal, agent), latency_ms: Math.round(performance.now() - started) }); }
         finally { res.off('close', abort); }
       }
       if (req.method === 'POST' && url.pathname === '/api/tts') {
         if (!settings.key('deepgram')) throw error('Add your Deepgram API key in Settings.', 503);
-        const { text, voice = view.voice() } = await readJson(req);
+        const input = await readJson(req);
+        const agentView = settingsFor(session, await ownedAgent(session, input.agentId));
+        const { text, voice = agentView.voice() } = input;
         if (typeof text !== 'string' || !text.trim() || text.length > 2000) throw error('Speech text must be 1–2000 characters.');
         if (!settings.status().voices.some(v => v.id === voice)) throw error('Choose one of the available voices.');
         if (ttsActive >= maxSpeech) throw error('Speech is busy. Stop playback or wait a moment.', 429);
@@ -250,7 +297,8 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
         } finally { clearTimeout(timeout); res.off('close', abort); ttsActive--; releaseUser(); }
       }
       if (req.method === 'POST' && url.pathname === '/api/reply') {
-        const { turns, guidance } = await readJson(req);
+        const { turns, guidance, agentId: id } = await readJson(req);
+        const agent = await ownedAgent(session, id);
         if (agentActive >= maxReplies) throw error('Reply capacity is busy. Wait a moment.', 429);
         const releaseUser = acquire(session.user, 'reply');
         const controller = new AbortController();
@@ -258,11 +306,13 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
         const timer = setTimeout(() => controller.abort(), 30_000);
         res.on('close', abort); agentActive++;
         try {
-          return sendJson(res, 200, await generateReply({ settings: view, turns, guidance, endpoint: agentEndpoint, signal: controller.signal }));
+          return sendJson(res, 200, await generateReply({ settings: settingsFor(session, agent), turns, guidance,
+            playbook: agent ? templatePlaybook(getTemplate(agent.templateId)) : undefined, endpoint: agentEndpoint, signal: controller.signal }));
         } finally { clearTimeout(timer); res.off('close', abort); agentActive--; releaseUser(); }
       }
       if (req.method === 'GET') {
-        const requested = url.pathname === '/' ? '/index.html' : url.pathname;
+        const requested = url.pathname === '/' ? (url.searchParams.has('overlay') ? '/index.html' : '/home.html') : ['/talk', '/coach'].includes(url.pathname) ? '/index.html'
+          : ['/agents', '/templates', '/agents/new'].includes(url.pathname) ? '/home.html' : url.pathname;
         if (await staticFile(res, requested)) return;
       }
       sendJson(res, 404, { error: 'Not found' });

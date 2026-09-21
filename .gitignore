@@ -29,6 +29,7 @@ build/
 *.dump
 pgdata/
 postgres-data/
+.cayana/
 
 # Workstation files and local assistant artifacts.
 .DS_Store
