@@ -5,6 +5,7 @@
   "main": "electron.js",
   "description": "Cayana voice agents and live conversation coaching powered by Jev",
   "scripts": {
+    "dev": "node server.mjs --dev",
     "start": "node server.mjs",
     "overlay": "electron .",
     "test": "node --test",

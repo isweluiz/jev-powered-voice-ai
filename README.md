@@ -85,6 +85,25 @@ behind that proxy and keep Node and PostgreSQL off the public network. With the
 any-Google-account policy, internal-only access must be enforced by the network.
 The server does not trust forwarded host headers or arbitrary redirect URLs.
 
+### Local developer sign-in
+
+Run `npm run dev`, open `http://127.0.0.1:3456/login`, and choose **Continue as
+developer**. This starts a local administrator session without Google credentials
+or PostgreSQL. The account menu identifies it as development access and supports
+sign-out. Provider requests use your configured keys as usual.
+
+The command temporarily selects `AUTH_MODE=development` and defaults `NODE_ENV`
+to `development`; it does not modify `.env`. Developer mode requires
+`NODE_ENV=development`, a loopback `HOST`, and a loopback `APP_BASE_URL` if set.
+It refuses production mode or a public address. The developer sign-in endpoint
+is unavailable in Google mode, even when `NODE_ENV=development`.
+
+Developer sessions use separate HttpOnly cookies, expire after eight hours, and
+are lost when the server stops. Google accounts and database records are untouched.
+Agent settings and provider key changes last for this server process unless you
+choose **Remember on this computer**, which saves them in the private local `.env`.
+Stop the dev server and run `npm start` to use the Google configuration again.
+
 For a deliberate single-user localhost setup only, `AUTH_MODE=local` disables
 Google/DB login and restores local settings behavior. It refuses to bind to a
 non-loopback address. Do not use this mode for a shared deployment.
@@ -275,7 +294,9 @@ microphone or call paid APIs. Real Bandwidth and Deepgram validation requires yo
 keys, provider access, and a microphone/playback check on the target browser.
 Authentication tests cover two-user preference and prompt isolation, administrator
 authorization, login replay/nonce/expiry checks, session rotation, CSRF, and WebSocket
-sign-out. The opt-in PostgreSQL test verifies migrations, durable sessions/preferences,
+revocation. Developer sign-in tests cover production/localhost restrictions,
+cross-site rejection, cookie separation, expiration, sign-out, and database independence.
+The opt-in PostgreSQL test verifies migrations, durable sessions/preferences,
 and one-use login transactions. A real Google roundtrip still needs your OAuth client
 credentials and consent configuration.
 

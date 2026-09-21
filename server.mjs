@@ -63,10 +63,13 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
     const port = server.address()?.port;
     return auth.origin ? [auth.origin] : [`http://localhost:${port}`, `http://127.0.0.1:${port}`];
   }
-  function validHost(req) { return origins().some(origin => new URL(origin).host === req.headers.host); }
+  function validHost(req) {
+    if (auth.development && !['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)) return false;
+    return origins().some(origin => new URL(origin).host === req.headers.host);
+  }
   function allowed(req) {
     const expected = origins().find(origin => new URL(origin).host === req.headers.host);
-    return Boolean(expected) && (!req.headers.origin || req.headers.origin === expected) && req.headers['sec-fetch-site'] !== 'cross-site';
+    return validHost(req) && Boolean(expected) && (!req.headers.origin || req.headers.origin === expected) && req.headers['sec-fetch-site'] !== 'cross-site';
   }
   function acquire(user, kind) {
     const key = `${user.id}:${kind}`;
@@ -79,12 +82,12 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
   }
   function settingsFor(session) {
     const base = settings.status();
-    const status = auth.enabled ? { ...base, ...validatePreferences(session.preferences, base) } : base;
+    const status = auth.enabled && !auth.development ? { ...base, ...validatePreferences(session.preferences, base) } : base;
     return { key: settings.key, voice: () => status.voice, status: () => status };
   }
   function statusFor(session, view) {
     return { ...view.status(), csrfToken: session.csrfToken, user: auth.enabled ? session.user : null,
-      storage: auth.enabled ? 'account' : 'local', canManageKeys: session.user.role === 'admin' };
+      storage: auth.development ? 'development' : auth.enabled ? 'account' : 'local', canManageKeys: session.user.role === 'admin' };
   }
   async function staticFile(res, requested) {
     const resolved = path.resolve(PUBLIC, '.' + requested);
@@ -130,7 +133,17 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
       }
       if (req.method === 'GET' && url.pathname === '/api/auth/status') {
         const session = await authenticate(req);
-        return sendJson(res, 200, { enabled: auth.enabled, configured: auth.configured, user: auth.enabled ? session?.user || null : null });
+        return sendJson(res, 200, { enabled: auth.enabled, configured: auth.configured, development: Boolean(auth.development), user: auth.enabled ? session?.user || null : null });
+      }
+      if (url.pathname === '/api/auth/development') {
+        if (!auth.development) return sendJson(res, 404, { error: 'Not found' });
+        if (req.method !== 'POST') return sendJson(res, 405, { error: 'Use POST to sign in.' });
+        if (!allowed(req) || !req.headers.origin) return sendJson(res, 403, { error: 'Cross-origin sign-in is not allowed.' });
+        await readJson(req);
+        const result = await auth.beginDevelopment(req);
+        speech.revokeSession(result.previousHash);
+        res.setHeader('Set-Cookie', result.cookie);
+        return sendJson(res, 200, { signedIn: true });
       }
       if (req.method === 'GET' && url.pathname === '/api/auth/google') {
         if (!allowed(req)) return sendJson(res, 403, { error: 'Cross-origin sign-in is not allowed.' });
@@ -138,6 +151,7 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
         const start = await auth.begin(); return redirect(start.location, start.cookie);
       }
       if (req.method === 'GET' && url.pathname === '/api/auth/google/callback') {
+        if (!auth.configured) return redirect('/login?reason=setup');
         try { const result = await auth.complete(req, url); return redirect('/', result.cookies); }
         catch (error) {
           const reason = ['setup', 'expired', 'cancelled', 'denied'].includes(error.authCode) ? error.authCode : 'failed';
@@ -159,7 +173,7 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
       if (req.method === 'POST' && url.pathname === '/api/settings') {
         const change = await readJson(req);
         try {
-          if (auth.enabled) {
+          if (auth.enabled && !auth.development) {
             if (change.keys != null && (typeof change.keys !== 'object' || Array.isArray(change.keys))) throw error('Invalid keys.');
             if (change.persist != null && typeof change.persist !== 'boolean') throw error('Invalid storage choice.');
             const updateKeys = (change.keys && Object.keys(change.keys).length) || change.persist;
@@ -269,12 +283,17 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   try {
-    const app = await createApp();
+    const env = await loadEnvironment(path.join(HERE, '.env'));
+    if (process.argv.includes('--dev')) {
+      env.AUTH_MODE = 'development';
+      env.NODE_ENV ||= 'development';
+    }
+    const app = await createApp({ env });
     app.server.on('error', async () => {
       console.error('Cayana could not listen on the configured address. Check HOST and PORT.');
       process.exitCode = 1; await app.close();
     });
-    app.server.listen(app.port, app.host, () => console.log(`Cayana running at ${app.auth.origin || `http://127.0.0.1:${app.port}`}${app.auth.enabled && !app.auth.configured ? ' · Google sign-in awaits configuration' : ''}`));
+    app.server.listen(app.port, app.host, () => console.log(`Cayana running at ${app.auth.origin || `http://127.0.0.1:${app.port}`}${app.auth.development ? ' · Local developer sign-in enabled' : app.auth.enabled && !app.auth.configured ? ' · Google sign-in awaits configuration' : ''}`));
     let closing = false;
     for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => {
       if (closing) return;

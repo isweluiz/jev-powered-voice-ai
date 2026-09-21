@@ -23,6 +23,12 @@ h1 { font-size:25px; line-height:1.2; margin:0; font-weight:600; letter-spacing:
 .google-button:focus-visible { outline:3px solid var(--blue); outline-offset:4px; }
 .google-button:disabled { cursor:not-allowed; border-color:#bacbd3; color:#61717b; }
 .account-note { font-size:11px; color:var(--muted); margin:12px 0 0; }
+.developer-divider { display:flex; align-items:center; gap:12px; margin:22px 0 16px; color:var(--muted); font-size:10px; }
+.developer-divider::before,.developer-divider::after { content:""; flex:1; height:1px; background:#d4e5ef; }
+.developer-button { width:100%; min-height:44px; border:1px solid #08304b; border-radius:8px; background:#08304b; color:#fff; font:500 14px/20px Arial,sans-serif; cursor:pointer; }
+.developer-button:hover:not(:disabled) { background:#0a4468; }
+.developer-button:focus-visible { outline:3px solid var(--blue); outline-offset:4px; }
+.developer-button:disabled { cursor:wait; opacity:.65; }
 .login-status { font-size:12px; line-height:1.6; color:var(--blue); margin:17px 0 0; }
 .login-status:empty { display:none; }
 .login-status[data-error="true"] { color:#9c432d; }
@@ -31,5 +37,5 @@ h1 { font-size:25px; line-height:1.2; margin:0; font-weight:600; letter-spacing:
 body>footer { padding:18px; text-align:center; color:#526878; font-size:10px; letter-spacing:.02em; }
 body>footer span { margin:0 6px; }
 @media(max-width:500px) { .brand { padding:22px 24px; } main { padding:20px 20px 36px; } .login-card { padding:30px 26px 0; } }
-@media(max-height:650px) { .brand { padding-top:18px; padding-bottom:18px; } main { padding-top:12px; padding-bottom:16px; } .login-card { padding-top:24px; } .welcome-icon { margin-bottom:16px; } }
+@media(max-height:760px) { .brand { padding-top:18px; padding-bottom:18px; } main { padding-top:12px; padding-bottom:16px; } .login-card { padding-top:24px; } .welcome-icon { margin-bottom:16px; } .intro { margin:10px 0 20px; } .developer-divider { margin:16px 0 12px; } .card-footer { margin-top:20px; padding:16px 0; } }
 @media(prefers-reduced-motion:reduce) { * { transition:none!important; } }
