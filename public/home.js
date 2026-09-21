@@ -1,4 +1,5 @@
-import { TEMPLATES, getTemplate, buildPrompt } from './templates.js';
+import { TEMPLATES, CUSTOM_TEMPLATE, getTemplate, buildPrompt } from './templates.js';
+import { mountTemplatePicker } from './template-picker.js';
 import { icon, mountShell } from './shell.js';
 import { getSettings, mountSettings, apiPost } from './settings.js';
 
@@ -6,8 +7,16 @@ const $ = id => document.getElementById(id);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 const query = new URLSearchParams(location.search);
 const route = location.pathname;
-const page = route === '/agents/new' ? 'builder' : route === '/agents' ? 'agents' : route === '/templates' ? 'templates' : 'home';
+const picking = route === '/agents/new' && !query.has('template') && !query.has('edit');
+const page = route === '/agents/new' ? picking ? 'agents' : 'builder' : route === '/agents' ? 'agents' : route === '/templates' ? 'templates' : 'home';
 let config, editing, customPrompt = false;
+const picker = mountTemplatePicker({ onClose: () => { if (picking) location.replace('/agents'); } });
+document.addEventListener('click', event => {
+  const link = event.target.closest('a');
+  if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  if (link.dataset.preview || link.getAttribute('href') === '/agents/new') { event.preventDefault(); picker.open(link.dataset.preview); }
+});
+if (picking) picker.open(query.get('preview'));
 const settings = mountSettings({ onChange: updateConnections });
 mountShell({ active: page === 'builder' ? 'agents' : page, onSettings: () => settings.open() });
 await import('./account.js');
@@ -24,10 +33,9 @@ function updateConnections(next) {
   $('workspaceStatus').textContent = `${configured} of 4 connections ready`;
   $('workspaceStatus').dataset.ready = String(configured === 4);
   $('connectionsSummary').textContent = configured === 4 ? 'All four providers are configured.' : `${configured} of 4 providers configured. Add keys in Connections.`;
-  if (next.development) $('workspaceKind').textContent = 'Local development';
 }
 function card(template) {
-  return `<a class="template-card" href="/agents/new?template=${encodeURIComponent(template.id)}" data-accent="${template.accent}"><span class="template-icon">${icon(template.icon)}</span><span class="template-sector">${escape(template.sector)}</span><h3>${escape(template.name)}</h3><p>${escape(template.description)}</p><div class="template-bottom"><span>Prompt + decision playbook</span>${icon('arrow')}</div></a>`;
+  return `<a class="template-card" data-preview="${template.id}" href="/agents/new?preview=${encodeURIComponent(template.id)}" data-accent="${template.accent}"><span class="template-icon">${icon(template.icon)}</span><span class="template-sector">${escape(template.sector)}</span><h3>${escape(template.name)}</h3><p>${escape(template.description)}</p><div class="template-bottom"><span>Preview template</span>${icon('arrow')}</div></a>`;
 }
 function agentRows(agents) {
   if (!agents.length) return `<div class="empty-state"><span>${icon('agents')}</span><div><h3>Your first agent starts here.</h3><p>Give it a purpose. We’ll help with the next step.</p></div><a class="text-link" href="/agents/new">Create an agent ↗</a></div>`;
@@ -63,16 +71,21 @@ function chooseTemplate(template, initial = false) {
   updatePrompt(); renderPreview(template);
 }
 async function builder() {
-  $('templateSelect').replaceChildren(...TEMPLATES.map(template => new Option(`${template.sector} · ${template.name}`, template.id)));
+  $('templateSelect').replaceChildren(...[...TEMPLATES, CUSTOM_TEMPLATE].map(template => new Option(`${template.sector} · ${template.name}`, template.id)));
   $('agentVoice').replaceChildren(...config.voices.map(voice => new Option(voice.label, voice.id)));
-  $('agentVoice').value = config.voice; $('agentSTT').value = config.sttProvider; $('agentModel').value = config.agent.model;
+  $('agentVoice').value = config.voice; $('agentSTT').value = config.sttProvider; $('builderModel').value = config.agent.model;
   if (query.get('edit')) {
     editing = (await get('/api/agents/' + encodeURIComponent(query.get('edit')))).agent;
-    const fields = { agentName: 'name', companyName: 'company', agentGoal: 'goal', agentKnowledge: 'knowledge', agentPrompt: 'systemPrompt', agentModel: 'model', agentVoice: 'voice', agentSTT: 'sttProvider', templateSelect: 'templateId' };
+    const fields = { agentName: 'name', companyName: 'company', agentGoal: 'goal', agentKnowledge: 'knowledge', agentPrompt: 'systemPrompt', builderModel: 'model', agentVoice: 'voice', agentSTT: 'sttProvider', templateSelect: 'templateId' };
     for (const [field, key] of Object.entries(fields)) $(field).value = editing[key];
     customPrompt = true; renderPreview(getTemplate(editing.templateId));
     $('pageEyebrow').textContent = 'EDIT WEB AGENT'; $('pageTitle').textContent = editing.name;
-  } else chooseTemplate(getTemplate(query.get('template')) || TEMPLATES[0], true);
+  } else {
+    const template = getTemplate(query.get('template'));
+    if (!template) throw new Error('Template not found. Choose one from Templates.');
+    chooseTemplate(template, true);
+    if (template.id === 'custom') document.querySelector('.advanced-prompt').open = true;
+  }
   $('templateSelect').onchange = () => chooseTemplate(getTemplate($('templateSelect').value));
   for (const field of ['companyName', 'agentGoal', 'agentKnowledge']) $(field).addEventListener('input', updatePrompt);
   $('agentPrompt').oninput = () => { customPrompt = true; };

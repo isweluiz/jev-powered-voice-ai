@@ -87,6 +87,10 @@ test('developer pages and APIs need a session; login rejects cross-site and form
   const f = await fixture(t);
   assert.equal((await f.request('/')).headers.get('location'), '/login');
   assert.equal((await f.request('/api/settings')).status, 401);
+  for (const asset of ['/login', '/login.css', '/login.js', '/material.css', '/theme.js']) {
+    assert.equal((await f.request(asset)).status, 200, asset + ' is available before sign-in');
+  }
+  assert.equal((await f.request('/session.js')).headers.get('location'), '/login');
   const status = await (await f.request('/api/auth/status')).json();
   assert.deepEqual(status, { enabled: true, configured: false, development: true, user: null });
   assert.equal((await f.request('/api/auth/development')).status, 405);

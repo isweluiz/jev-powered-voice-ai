@@ -63,7 +63,17 @@ export const TEMPLATES = [
   },
 ];
 
-export const getTemplate = id => TEMPLATES.find(template => template.id === id);
+export const CUSTOM_TEMPLATE = {
+  id: 'custom', name: 'Custom web agent', sector: 'Custom', icon: 'agents', accent: 'blue',
+  description: 'Start with your own instructions and a general decision playbook.',
+  goal: 'Understand what the caller needs and agree on a useful next step within the supplied scope.',
+  instruction: 'Follow the purpose and company information supplied by the creator. Clarify uncertainty, explain supported options, and confirm understanding before suggesting a next step.',
+  stageLabel: 'Conversation progress', stages: ['Understanding', 'Need clarified', 'Options explored', 'Next step agreed'],
+  stageCriteria: ['The caller’s purpose is unclear', 'The need and relevant context are understood', 'Supported options have been discussed', 'The caller agrees on a proposed next step; no completed external action is assumed'],
+  signals: ['Need understood', 'Concern raised', 'Next step requested'],
+  actions: [action('clarify', 'Understand the need', 'The caller’s purpose is unclear', 'Ask a focused question about what the caller wants to achieve.'), action('qualify', 'Clarify the context', 'The need is known but relevant constraints are missing', 'Ask one question about context or constraints that affect the next step.'), action('explain', 'Explain an option', 'An answer is supported by the supplied information', 'Explain a relevant option using only supplied facts.'), action('resolve', 'Address the concern', 'A concern or misunderstanding prevents progress', 'Acknowledge the concern and clarify what remains unresolved.'), action('next_step', 'Agree on a next step', 'The caller is ready to proceed', 'Summarize a proposed next step and ask for agreement without claiming it is completed.')],
+};
+export const getTemplate = id => id === 'custom' ? CUSTOM_TEMPLATE : TEMPLATES.find(template => template.id === id);
 export function buildPrompt(template, { company = '', goal = template.goal, knowledge = '' } = {}) {
   return `${common}\n\nRole: ${template.name}${company.trim() ? ` for ${company.trim()}` : ''}.\nObjective: ${goal.trim()}\n${template.instruction}\n\nCompany information:\n${knowledge.trim() || 'No company-specific facts have been provided. Ask about the caller’s needs and do not invent company details.'}`;
 }

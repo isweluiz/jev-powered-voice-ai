@@ -2,12 +2,11 @@
   "name": "cayana",
   "version": "1.0.0",
   "private": true,
-  "main": "electron.js",
-  "description": "Cayana voice agents and live conversation coaching powered by Jev",
+  "main": "server.mjs",
+  "description": "Cayana web voice agents with Jev decision guidance",
   "scripts": {
     "dev": "node server.mjs --dev",
     "start": "node server.mjs",
-    "overlay": "electron .",
     "test": "node --test",
     "lint": "eslint . --max-warnings=0",
     "test:db": "node scripts/check-database.mjs",
@@ -24,7 +23,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "electron": "^33.4.11",
     "eslint": "^10.11.0",
     "globals": "^17.12.0",
     "parse5": "^8.0.1"

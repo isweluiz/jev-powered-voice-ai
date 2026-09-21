@@ -1,8 +1,8 @@
 # Cayana
 
-A sales-call workspace with Google sign-in, Bandwidth speech recognition, Jev call analysis, and
-Deepgram spoken coaching. Browser speech recognition is available as an alternative.
-Voice agent mode uses OpenAI to generate sales or lead-qualification replies.
+A web voice-agent workspace with Google sign-in, Bandwidth speech recognition,
+OpenAI replies, Jev decision guidance, and Deepgram speech. Browser speech
+recognition is available as an alternative.
 
 ## Run
 
@@ -30,24 +30,27 @@ Cayana retains the existing `osprey` database, Docker storage, and session-cooki
 identifiers so the name change does not require a data migration or signing in again.
 
 Open http://127.0.0.1:3456, sign in with Google, and select **Settings**. Administrators can enter your Bandwidth STT,
-Deepgram TTS, Jev, and OpenAI API keys (OpenAI is needed only for Voice agent mode). Choose **Bandwidth STT** or **Browser speech
+Deepgram TTS, Jev, and OpenAI API keys. Choose **Bandwidth STT** or **Browser speech
 recognition** for microphone input. Browser recognition needs no STT key, depends
 on the browser's speech service, and stops on connection errors instead of retrying
 indefinitely. Bandwidth is the default; there is no silent provider fallback.
 
 ## Conversation workspace and web agents
 
-After sign-in, Home opens a sidebar workspace using the same light sky palette as
-the login page. **Start talking** opens the existing voice agent with your account’s
-default prompt and voice. **Live coach** retains the compact coaching dashboard,
-capture controls, waveform, and conversation tools.
+After sign-in, Home opens the Material 3 workspace. Login, navigation, forms,
+settings, and voice sessions share blue tonal surfaces, Roboto typography, and
+light/dark themes. **Start talking** opens the voice agent with your account’s
+default prompt and voice. Live coach and its legacy desktop overlays have been
+removed; old coaching URLs redirect to Talk.
 
-**Create web agent** opens a builder with six sector templates: sales discovery,
+**Create web agent** opens a searchable template picker with category navigation
+and previews before the builder. Six sector templates are available: sales discovery,
 customer service, IT support, logistics, hospitality, and field service. Each
 contains an editable system prompt, a conversation objective, sector-specific Jev
 questions, four progress stages, suggested actions, and a human-attention signal.
-Add company facts, select a voice and speech provider, then save or open the agent
-in Talk. My agents supports reopening and editing saved configurations.
+**Write my own prompt** starts with a generic decision playbook and opens the
+editable prompt. Add company facts, select a voice and speech provider, then save
+or open the agent in Talk. My agents supports reopening and editing saved configurations.
 
 For a saved agent, the server resolves ownership before reading its configuration
 or calling a provider. Jev evaluates that agent’s sector questions; the matching
@@ -142,18 +145,10 @@ For a deliberate single-user localhost setup only, `AUTH_MODE=local` disables
 Google/DB login and restores local settings behavior. It refuses to bind to a
 non-loopback address. Do not use this mode for a shared deployment.
 
-## Live coaching
+## Voice and playback
 
-**Start listening** captures your microphone. **Capture call** shares audio from a
-browser-supported tab/screen source and always uses Bandwidth; available sources
-and system-audio support vary by browser and OS. Choose a source that offers audio
-and enable Share audio. Speaker buttons identify whose turn is being recorded;
-switching speakers finishes the current stream before starting the next.
-
-**Read aloud** uses Deepgram to speak the displayed coaching action and first tip.
-It stops listening first so the coaching is not transcribed back into the call.
-Press Start listening to resume. Settings includes a voice selector and a preview
-using the saved Deepgram key. In Live coach mode, spoken output is on demand.
+**Start voice session** uses your microphone. Settings includes a voice selector
+and a preview using the saved Deepgram key.
 
 The voice channel replaces the native audio player with an audio-reactive waveform
 and Pause/Resume/Stop controls. Deepgram's REST response is relayed immediately as
@@ -166,20 +161,16 @@ The player reads the sample rate from the standard PCM content type and also acc
 the custom rate header. Older MP3/WAV responses use browser decoding and the same
 waveform controls; those compatibility responses finish downloading before playback.
 
-Typed input and **Run sample call** work with just the Jev key. The sample sends
-fictional text through the real API; it does not play a recorded call.
+## Voice agent workspace
 
-## Voice agent mode
-
-Select **Voice agent** in the header. Both modes share the same buying-stage gauge,
-Suggested action card, and voice-channel layout. The compact desktop layout places
-stage and action side by side, with the waveform and latest reply below.
-**View transcript** opens the complete conversation in a scrollable drawer without
-moving the dashboard. Smaller screens stack the cards and allow normal scrolling
-so content stays readable. The light/dark theme uses the blue, navy, purple, green,
-and orange palette from [Bandwidth’s website](https://www.bandwidth.com/), with
-contrasting shades for text and controls. **Edit prompt** opens
-the agent configuration without leaving the dashboard.
+The compact desktop layout places conversation progress and the suggested action
+side by side, with the waveform, latest reply, and sector signals below.
+**View transcript** opens the conversation in a scrollable drawer. Smaller screens
+stack the cards and allow normal scrolling so content stays readable.
+**Edit prompt** opens agent configuration without leaving the session.
+The shared design follows [Material 3](https://m3.material.io/) color roles,
+shapes, state layers, typography, navigation, and dialogs. Native HTML controls
+keep keyboard, focus, and Escape behavior without a component framework.
 
 In **Settings → Agent**, configure the OpenAI
 model and system prompt with your company facts, sales approach, and qualification
@@ -293,38 +284,38 @@ lib/bandwidth.mjs       Authenticated Bandwidth WebSocket relay
 schema.json             Jev questions
 public/home.html        Home, template gallery, agent list and builder
 public/home.js          Agent creation, editing and workspace navigation
-public/home.css         Light workspace and builder layout
+public/home.css         Material workspace and builder layout
+public/material.css     Shared Material 3 tokens and controls
+public/theme.js         Shared theme preference and cross-tab updates
+public/template-picker.js  Search, categories, prompt previews
+public/template-picker.css Responsive template dialog
 public/shell.js         Shared sidebar and account navigation
 public/shell.css        Responsive sidebar and shared workspace styling
 public/templates.js     Sector prompts, Jev questions and decision playbooks
-public/index.html       Voice-agent and live-coach conversation workspace
+public/index.html       Voice-agent conversation workspace
+public/session.js       Voice session, evaluation and transcript controls
+public/session.css      Progress gauge and decision display
 public/login.html       Minimal Google sign-in screen
-public/login.css        Responsive sky background and translucent card
+public/login.css        Material sign-in layout
 public/login.js         Google sign-in availability and error handling
 public/account.js       Signed-in account menu and sign-out
 public/settings.js      Key-entry dialog and settings requests
 public/settings.css     Settings styling
-public/workspace.css    Workspace header, mode navigation, conversation UI
+public/workspace.css    Compact Material voice-session layout
 public/agent-session.js Half-duplex voice-agent lifecycle and guidance handoff
 public/jev-client.js     Shared evaluations keyed to the exact transcript
 public/waveform.js       Audio-reactive voice waveform
 public/speech.js         Capture, transcript assembly, browser STT, playback
 public/pcm-worklet.js    Audio framing and Float32 → PCM16 conversion
-public/dashboard.html   Transcript and signals dashboard
 public/decide.js         Local decision logic
 public/playbook.js       Coaching actions and tips
 test/                   Offline provider and audio lifecycle tests
 ```
 
-The optional Electron overlay remains in `electron.js` and `preload.js`. Its
-existing Electron dependency is not installed by the browser setup above and
-needs a separate security upgrade before use. Local Whisper was replaced and its
-large runtime dependencies were removed.
-
 ## Validation
 
 ```sh
-npm ci --ignore-scripts  # development tools; skips the optional Electron download
+npm ci --ignore-scripts
 npm run lint
 npm test
 npm run test:db          # uses DATABASE_URL; isolates data in a temporary schema

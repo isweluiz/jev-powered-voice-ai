@@ -64,7 +64,7 @@ export function mountSettings({ onChange = () => {}, onTestVoice } = {}) {
     </section>
     <section id="settingsVoicePanel" role="tabpanel" aria-labelledby="voiceTab" hidden>
       <div class="voice-setting"><label for="sttProvider">Microphone speech recognition</label><select id="sttProvider"><option value="bandwidth">Bandwidth STT</option><option value="browser">Browser speech recognition</option></select></div>
-      <p class="settings-footnote">Browser mode needs no STT key and uses the browser’s speech service. Availability varies by browser. Call capture always uses Bandwidth.</p>
+      <p class="settings-footnote">Browser mode needs no STT key and uses the browser’s speech service. Availability varies by browser.</p>
       <div class="voice-setting"><label for="ttsVoice">Deepgram voice</label><select id="ttsVoice"></select><button type="button" id="testVoice" class="ghost">Preview voice</button></div>
       <p class="settings-footnote">Apply a Deepgram key before previewing. The microphone pauses while the agent speaks to prevent feedback.</p>
     </section>

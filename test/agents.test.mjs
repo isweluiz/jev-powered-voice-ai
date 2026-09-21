@@ -4,13 +4,13 @@ import { mkdtemp, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { createLocalAgentStore, validateAgent, newAgent } from '../lib/agents.mjs';
-import { TEMPLATES, getTemplate, templatePlaybook, templateQuestions } from '../public/templates.js';
+import { TEMPLATES, CUSTOM_TEMPLATE, getTemplate, templatePlaybook, templateQuestions } from '../public/templates.js';
 import { decide, createMemory, markDone } from '../public/decide.js';
 import { coachingContext } from '../lib/agent.mjs';
 
 const defaults = { agent: { model: 'gpt-4.1-mini', systemPrompt: 'Default prompt' }, voice: 'aura-2-thalia-en', sttProvider: 'browser' };
 test('sector playbooks send bounded guidance and prioritize human attention even after marking it done', () => {
-  for (const template of TEMPLATES) {
+  for (const template of [...TEMPLATES, CUSTOM_TEMPLATE]) {
     const playbook = templatePlaybook(template), questions = templateQuestions(template), memory = createMemory();
     const result = decide({ next_best_action: { probabilities: { qualify: .95, handoff: .05 } }, needs_human: { type: 'noul', noul: .91 } }, playbook, memory);
     assert.equal(result.action, 'handoff');

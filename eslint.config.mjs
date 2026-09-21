@@ -15,7 +15,6 @@ export default [
     },
   },
   { files: ['**/*.mjs'], languageOptions: { globals: globals.node } },
-  { files: ['electron.js', 'preload.js'], languageOptions: { sourceType: 'commonjs', globals: globals.node } },
   { files: ['public/**/*.{js,html}'], languageOptions: { globals: globals.browser } },
   { files: ['public/**/*.html'], processor: htmlScripts },
   { files: ['public/pcm-worklet.js'], languageOptions: { globals: { AudioWorkletProcessor: 'readonly', registerProcessor: 'readonly', sampleRate: 'readonly' } } },

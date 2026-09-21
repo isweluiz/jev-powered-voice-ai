@@ -84,7 +84,32 @@ test('sector agent context reaches Jev, the reply model, and the configured voic
   assert.equal((await fetch(f.origin + '/api/settings').then(r => r.json())).voice, f.initial.voice);
   assert.equal((await f.post('/api/reply', { agentId: agent.id, turns, guidance: { status: 'act', action: 'book_demo' } })).status, 400);
   assert.equal(f.calls.length, 3);
-  for (const route of ['/', '/talk', '/coach', '/agents', '/templates', '/agents/new']) assert.equal((await fetch(f.origin + route)).status, 200);
+  for (const route of ['/', '/talk', '/agents', '/templates', '/agents/new', '/agents/new?template=custom']) assert.equal((await fetch(f.origin + route)).status, 200);
+  for (const route of ['/coach', '/dashboard.html', '/setup-key.html', '/?overlay&card=hero']) {
+    const retired = await fetch(f.origin + route, { redirect: 'manual' });
+    assert.equal(retired.status, 303);
+    assert.equal(retired.headers.get('location'), '/talk');
+  }
+});
+
+test('a custom-prompt agent saves, reopens, edits, and uses the general decision playbook', async t => {
+  const f = await fixture(t);
+  await f.post('/api/settings', { keys: dummy });
+  const created = await f.post('/api/agents', { name: 'Custom assistant', templateId: 'custom', goal: 'Help callers understand our services.', systemPrompt: 'You help explain our workshop services. Ask one question at a time.' });
+  assert.equal(created.status, 201);
+  const { agent } = await created.json();
+  const reopened = await fetch(f.origin + '/api/agents/' + agent.id).then(response => response.json());
+  assert.equal(reopened.agent.templateId, 'custom');
+  assert.equal(reopened.agent.systemPrompt, agent.systemPrompt);
+  const updated = await f.post('/api/agents/' + agent.id, { ...agent, systemPrompt: 'You are our workshop assistant. Explain the next step.' });
+  assert.equal(updated.status, 200);
+  const turns = [{ speaker: 'customer', text: 'Can you explain your workshops?' }];
+  assert.equal((await f.post('/api/evaluate', { agentId: agent.id, turns })).status, 200);
+  assert.match(f.calls[0].body.questions.buying_stage.instructions, /conversation progress/);
+  assert.equal(f.calls[0].body.state.agent_context.sector, 'Custom');
+  assert.equal((await f.post('/api/reply', { agentId: agent.id, turns, guidance: { status: 'act', action: 'explain', score: .9 } })).status, 200);
+  assert.match(f.calls[1].body.instructions, /You are our workshop assistant/);
+  assert.match(f.calls[1].body.instructions, /Explain an option/);
 });
 
 test('settings are secret-free, session-only by default, and reject cross-origin/CSRF requests', async t => {

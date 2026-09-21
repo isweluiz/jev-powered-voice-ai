@@ -143,7 +143,7 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
       if (!validHost(req)) return sendJson(res, 403, { error: 'This hostname is not allowed.' });
       const url = new URL(req.url, `http://${req.headers.host}`);
       const redirect = (location, cookies) => { res.writeHead(303, { Location: location, ...(cookies ? { 'Set-Cookie': cookies } : {}) }); res.end(); };
-      if (req.method === 'GET' && ['/login', '/login.html', '/login.css', '/login.js'].includes(url.pathname)) {
+      if (req.method === 'GET' && ['/login', '/login.html', '/login.css', '/login.js', '/material.css', '/theme.js'].includes(url.pathname)) {
         if (await staticFile(res, url.pathname === '/login' ? '/login.html' : url.pathname)) return;
       }
       if (req.method === 'GET' && url.pathname === '/api/auth/status') {
@@ -311,7 +311,8 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
         } finally { clearTimeout(timer); res.off('close', abort); agentActive--; releaseUser(); }
       }
       if (req.method === 'GET') {
-        const requested = url.pathname === '/' ? (url.searchParams.has('overlay') ? '/index.html' : '/home.html') : ['/talk', '/coach'].includes(url.pathname) ? '/index.html'
+        if (['/coach', '/dashboard.html', '/setup-key.html'].includes(url.pathname) || url.searchParams.has('overlay')) return redirect('/talk');
+        const requested = url.pathname === '/' ? '/home.html' : url.pathname === '/talk' ? '/index.html'
           : ['/agents', '/templates', '/agents/new'].includes(url.pathname) ? '/home.html' : url.pathname;
         if (await staticFile(res, requested)) return;
       }
