@@ -43,9 +43,9 @@ export function updateShellConnections(config) {
 }
 export function mountShell({ active = 'home', onSettings = () => {}, config } = {}) {
   document.body.classList.add('has-shell');
-  const nav = [['home', '/', 'Overview'], ['mic', '/talk', 'Talk'], ['agents', '/agents', 'My agents'], ['grid', '/templates', 'Templates'], ['logs', '/logs', 'Conversation logs']];
-  const keys = ['home', 'talk', 'agents', 'templates', 'logs'];
-  const title = nav[keys.indexOf(active)]?.[2] || 'Agent builder';
+  const nav = [['home', '/', 'Overview'], ['mic', '/talk', 'Talk'], ['agents', '/agents', 'My agents'], ['logs', '/logs', 'Conversation logs']];
+  const keys = ['home', 'talk', 'agents', 'logs'];
+  const title = nav[keys.indexOf(active)]?.[2] || (active === 'templates' ? 'Templates' : 'Agent builder');
   const aside = document.createElement('aside');
   aside.className = 'shell-sidebar'; aside.id = 'workspaceSidebar';
   aside.innerHTML = `<a class="shell-brand" href="/" aria-label="Cayana home"><span class="brand-icon">${icon('brand')}</span><span class="brand-copy"><small>Voice agent workspace</small><strong>Cayana</strong></span></a>
