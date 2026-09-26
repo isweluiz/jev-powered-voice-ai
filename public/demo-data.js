@@ -49,6 +49,37 @@ const LOGS = [
 const templateIds = { sales: 'sales', concierge: 'service', it: 'it-support', ship: 'logistics' };
 export const SAMPLE_AGENTS = AGENTS.map(agent => ({ ...agent, id: templateIds[agent.id] }));
 export const SAMPLE_LOGS = LOGS.map(log => ({ ...log, agent: templateIds[log.agent], sample: true }));
+// Illustrative dashboard totals are separate from the eight example transcripts.
+export const OVERVIEW_SAMPLE = { conversations: 1284, averageSeconds: 222, resolutionRate: 72.4, handoffs: 86, resolved: 930 };
+export const SAMPLE_OUTCOMES = [
+  [125, 84], [148, 98], [132, 92], [163, 116],
+  [170, 128], [156, 114], [184, 138], [206, 160],
+].map(([total, resolved], i) => ({ label: `W${i + 1}`, total, resolved }));
+
+export function sampleTrend(period) {
+  const labels = { weekly: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'], monthly: ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'], yearly: ['2022', '2023', '2024', '2025', '2026'] }[period];
+  const per = period === 'weekly' ? 6 : period === 'yearly' ? 9 : 4;
+  const columns = Array.from({ length: labels.length * per }, (_, i) => {
+    const voiceLevel = Math.max(1, Math.round(8 + Math.sin(i * .3) * 5 + Math.cos(i * 1.7) * 3));
+    const text = 2 + i % 5;
+    return { voiceLevel, textLevel: voiceLevel + text, voice: voiceLevel * 9, text: text * 9, label: labels[Math.floor(i / per)] };
+  });
+  return { labels, columns, total: columns.reduce((sum, col) => sum + col.voice + col.text, 0) };
+}
+
+const wholeNumber = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+export const formatCount = value => wholeNumber.format(Math.round(value));
+export function overviewNumbers(p, trendTotal) {
+  const seconds = Math.round(OVERVIEW_SAMPLE.averageSeconds * p);
+  return {
+    conversations: formatCount(OVERVIEW_SAMPLE.conversations * p),
+    average: `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`,
+    rate: (OVERVIEW_SAMPLE.resolutionRate * p).toFixed(1) + '%',
+    handoffs: formatCount(OVERVIEW_SAMPLE.handoffs * p),
+    resolved: formatCount(OVERVIEW_SAMPLE.resolved * p),
+    trend: formatCount(trendTotal * p),
+  };
+}
 export const durationSeconds = value => { const parts = value.match(/^(\d+)m (\d+)s$/); return parts ? Number(parts[1]) * 60 + Number(parts[2]) : 0; };
 export const formatDuration = seconds => `${Math.floor(seconds / 60)}m ${String(Math.round(seconds % 60)).padStart(2, '0')}s`;
 export function summarizeLogs(logs) {

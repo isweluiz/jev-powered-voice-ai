@@ -31,8 +31,6 @@ export function loadAgents() {
   });
 }
 export function updateShellConnections(config) {
-  const count = Object.values(config.configured).filter(Boolean).length;
-  document.querySelectorAll('[data-shell-status]').forEach(item => { item.textContent = `${count} of 4 keys configured`; });
   for (const id of ['bandwidth', 'deepgram', 'openai', 'jev']) {
     const item = document.querySelector(`[data-provider="${id}"]`);
     if (!item) continue;
@@ -55,7 +53,7 @@ export function mountShell({ active = 'home', onSettings = () => {}, config } = 
   document.body.prepend(aside);
   const scrim = document.createElement('button'); scrim.className = 'nav-scrim'; scrim.tabIndex = -1; scrim.setAttribute('aria-label', 'Close navigation'); document.body.prepend(scrim);
   const header = document.createElement('header'); header.className = 'shell-header';
-  header.innerHTML = `<button class="nav-toggle icon-button" type="button" aria-label="Toggle navigation" aria-controls="workspaceSidebar" aria-expanded="false">${icon('grid')}</button><div class="shell-breadcrumb"><a href="/">Cayana</a><span>›</span><strong>${title}</strong></div><button class="shell-search" type="button" aria-label="Search workspace">${icon('search')}<span>Search agents, logs…</span><kbd>⌘K</kbd></button><span class="shell-key-status" data-shell-status>Checking connections…</span>`;
+  header.innerHTML = `<button class="nav-toggle icon-button" type="button" aria-label="Toggle navigation" aria-controls="workspaceSidebar" aria-expanded="false">${icon('grid')}</button><div class="shell-breadcrumb"><a href="/">Cayana</a><span>›</span><strong>${title}</strong></div><button class="shell-search" type="button" aria-label="Search workspace">${icon('search')}<span>Search agents, logs…</span><kbd>⌘K</kbd></button>`;
   document.body.insertBefore(header, document.querySelector('body>main,body>.bar'));
   const toggle = header.querySelector('.nav-toggle');
   scrim.onclick = () => { document.body.classList.remove('nav-open'); toggle.setAttribute('aria-expanded', 'false'); toggle.focus(); };

@@ -1,7 +1,8 @@
-import { SAMPLE_AGENTS, SAMPLE_LOGS, summarizeLogs, selectLogs, formatDuration } from './demo-data.js';
+import { SAMPLE_AGENTS, SAMPLE_LOGS, OVERVIEW_SAMPLE, SAMPLE_OUTCOMES, sampleTrend, overviewNumbers, formatCount, summarizeLogs, selectLogs, formatDuration } from './demo-data.js';
 import { getTemplate } from './templates.js';
 import { icon } from './shell.js';
 import { escape, outcomePill } from './ui.js';
+import { startOverviewIntro } from './overview-intro.js';
 
 const $ = id => document.getElementById(id);
 const agentName = id => SAMPLE_AGENTS.find(agent => agent.id === id)?.name || getTemplate(id)?.name || 'Agent';
@@ -17,28 +18,50 @@ export function agentCard(agent, { compact = false } = {}) {
 }
 
 function renderChart(period) {
-  const labels = { weekly: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'], monthly: ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'], yearly: ['2022', '2023', '2024', '2025', '2026'] }[period];
-  const per = period === 'weekly' ? 6 : period === 'yearly' ? 9 : 4;
-  const columns = Array.from({ length: labels.length * per }, (_, i) => {
-    const voice = Math.max(1, Math.round(8 + Math.sin(i * .3) * 5 + Math.cos(i * 1.7) * 3));
-    return { voice, text: 2 + i % 5, label: labels[Math.floor(i / per)] };
-  });
-  $('trendTotal').textContent = columns.reduce((sum, col) => sum + (col.voice + col.text) * 9, 0).toLocaleString();
+  const { labels, columns, total } = sampleTrend(period);
   $('heatChart').style.setProperty('--chart-cols', columns.length);
-  $('heatChart').innerHTML = columns.map(col => `<button type="button" class="heat-column" aria-label="${col.label}: ${col.voice * 9} voice and ${col.text * 9} text sample sessions">${Array.from({ length: 22 }, (_, row) => `<i class="${21 - row < col.voice ? 'heat-voice' : 21 - row < col.voice + col.text ? 'heat-text' : ''}"></i>`).join('')}<span class="chart-tooltip">${col.label}<b>${col.voice * 9} voice · ${col.text * 9} text</b></span></button>`).join('');
+  $('heatChart').innerHTML = columns.map(col => `<button type="button" class="heat-column" aria-label="${col.label}: ${col.voice} voice and ${col.text} text sample sessions">${'<i aria-hidden="true"></i>'.repeat(22)}<span class="chart-tooltip">${col.label}<b>${col.voice} voice · ${col.text} text</b></span></button>`).join('');
   $('chartLabels').innerHTML = labels.map(label => `<span>${label}</span>`).join('');
+  const cells = [...$('heatChart').querySelectorAll('.heat-column')].map(column => [...column.querySelectorAll('i')]);
+  return { total, paint: p => {
+    $('trendTotal').textContent = formatCount(total * p);
+    columns.forEach((column, i) => cells[i].forEach((cell, row) => {
+      const rowFromBottom = 21 - row;
+      const color = rowFromBottom < column.voiceLevel * p ? 'heat-voice' : rowFromBottom < column.textLevel * p ? 'heat-text' : '';
+      if (cell.className !== color) cell.className = color;
+    }));
+  } };
 }
 export function mountOverview(agents) {
-  const stats = summarizeLogs(SAMPLE_LOGS);
-  const metrics = [['Conversations', stats.total, 'sessions', 'Eight supplied example logs'], ['Avg. handle time', formatDuration(stats.average), '', 'Average across sample logs'], ['Resolution rate', stats.rate + '%', '', 'Resolved or qualified examples'], ['Human handoffs', stats.handoffs, 'sessions', 'Handed off or escalated examples']];
-  $('metricCards').innerHTML = metrics.map(([label, value, unit, note], k) => `<article class="metric-card"><div class="metric-inner"><div><h2>${label}</h2><div class="metric-value">${value}<small>${unit}</small></div></div><div class="spark-bars" aria-hidden="true">${SAMPLE_LOGS.map((log, i) => `<i style="height:${12 + log.score / 3}px" class="${i === k + 2 ? 'accent' : ''}"></i>`).join('')}</div></div><p>${note}<span>Sample</span></p></article>`).join('');
+  const metrics = [['Conversations', 'conversations', 'sessions', 'Illustrative session volume'], ['Avg. handle time', 'average', '', 'Illustrative handling time'], ['Resolution rate', 'rate', '', 'Resolved or qualified sessions'], ['Human handoffs', 'handoffs', 'sessions', 'Sessions needing human attention']];
+  $('metricCards').innerHTML = metrics.map(([label, key, unit, note], k) => `<article class="metric-card"><div class="metric-inner"><div><h2>${label}</h2><div class="metric-value"><span data-overview-number="${key}"></span><small>${unit}</small></div></div><div class="spark-bars" aria-hidden="true">${SAMPLE_LOGS.map((log, i) => `<i data-height="${12 + log.score / 3}" style="height:0" class="${i === k + 2 ? 'accent' : ''}"></i>`).join('')}</div></div><p>${note}<span>Sample</span></p></article>`).join('');
   const picks = ['sales', 'service', 'it-support', 'logistics'].map(id => agents.find(agent => agent.templateId === id)).filter(Boolean);
   $('quickAgents').innerHTML = picks.map(agent => agentCard(agent, { compact: true })).join('');
-  $('outcomeValue').innerHTML = `<strong>${stats.resolved}</strong><span>of ${stats.total} sample sessions</span>`;
-  $('sampleInsight').textContent = `${stats.resolved} of ${stats.total} examples end resolved or qualified. Two need human attention. Clear intent and a focused next question help the agent progress; external actions still require a connected service.`;
-  $('outcomeBars').innerHTML = SAMPLE_LOGS.map(log => `<div><i style="height:${log.score}%"></i><span>${escape(log.id.slice(-2))}</span><span class="chart-tooltip">${escape(log.id)} · ${log.score}/100</span></div>`).join('');
-  renderChart('monthly');
-  $('chartPeriods').onclick = event => { const button = event.target.closest('[data-period]'); if (!button) return; $('chartPeriods').querySelectorAll('button').forEach(item => item.setAttribute('aria-pressed', String(item === button))); renderChart(button.dataset.period); };
+  $('outcomeValue').innerHTML = `<strong data-overview-number="resolved"></strong><span>of ${formatCount(OVERVIEW_SAMPLE.conversations)} sample sessions</span>`;
+  $('sampleInsight').textContent = `${formatCount(OVERVIEW_SAMPLE.resolved)} of ${formatCount(OVERVIEW_SAMPLE.conversations)} illustrative sessions end resolved or qualified; ${OVERVIEW_SAMPLE.handoffs} need a human handoff. Clear intent and a focused next question help the agent progress; external actions still require a connected service.`;
+  const maxOutcome = Math.max(...SAMPLE_OUTCOMES.map(item => item.total));
+  $('outcomeBars').innerHTML = SAMPLE_OUTCOMES.map(item => `<div tabindex="0" aria-label="${item.label}: ${item.total} total, ${item.resolved} resolved or qualified sample sessions"><i class="outcome-total" data-height="${item.total / maxOutcome * 100}" style="height:0"></i><i class="outcome-resolved" data-height="${item.resolved / maxOutcome * 100}" style="height:0"></i><span>${item.label}</span><span class="chart-tooltip">${item.label} · ${item.total} total · ${item.resolved} resolved</span></div>`).join('');
+  let chart = renderChart('monthly'), animateTrend = true;
+  $('chartPeriods').querySelectorAll('button').forEach(item => item.setAttribute('aria-pressed', String(item.dataset.period === 'monthly')));
+  const numbers = [...$('homeView').querySelectorAll('[data-overview-number]')];
+  const sparkbars = [...$('metricCards').querySelectorAll('[data-height]')];
+  const outcomes = [...$('outcomeBars').querySelectorAll('[data-height]')];
+  const paint = p => {
+    const values = overviewNumbers(p, chart.total);
+    numbers.forEach(item => { item.textContent = values[item.dataset.overviewNumber]; });
+    sparkbars.forEach(bar => { bar.style.height = Number(bar.dataset.height) * p + 'px'; });
+    outcomes.forEach(bar => { bar.style.height = Number(bar.dataset.height) * p + '%'; });
+    if (animateTrend) chart.paint(p);
+  };
+  $('chartPeriods').onclick = event => {
+    const button = event.target.closest('[data-period]');
+    if (!button || button.getAttribute('aria-pressed') === 'true') return;
+    // A period selected during the intro is immediately complete, never reanimated.
+    animateTrend = false;
+    $('chartPeriods').querySelectorAll('button').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    chart = renderChart(button.dataset.period);
+    chart.paint(1);
+  };
   let sort = '', direction = 1;
   const renderTable = () => {
     const logs = selectLogs(SAMPLE_LOGS, $('conversationSearch').value, sort, direction);
@@ -49,6 +72,12 @@ export function mountOverview(agents) {
   document.querySelectorAll('[data-sort]').forEach(button => { button.onclick = () => { direction = sort === button.dataset.sort ? -direction : 1; sort = button.dataset.sort; document.querySelectorAll('[data-sort]').forEach(item => item.closest('th').removeAttribute('aria-sort')); button.closest('th').setAttribute('aria-sort', direction === 1 ? 'ascending' : 'descending'); renderTable(); }; });
   $('conversationRows').onclick = event => { if (event.target.closest('a')) return; const row = event.target.closest('[data-log]'); if (row) location.assign('/logs?id=' + row.dataset.log); };
   renderTable();
+  const stopIntro = startOverviewIntro(paint);
+  return () => {
+    stopIntro();
+    // A page restored from the back/forward cache must not retain a partial frame.
+    paint(1);
+  };
 }
 export function mountLogs(agents) {
   let selected = SAMPLE_LOGS.find(log => log.id === new URLSearchParams(location.search).get('id')) || SAMPLE_LOGS[0];

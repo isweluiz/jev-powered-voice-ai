@@ -284,9 +284,14 @@ Use the Google/PostgreSQL path for a shared deployment.
 
 ## Demo analytics and conversation logs
 
-Overview includes four metrics calculated from eight fictional reference logs,
-searchable and sortable recent conversations, and a separately labeled illustrative
-activity chart with weekly/monthly/yearly views. **Conversation logs** opens the
+Overview includes illustrative metrics (1,284 conversations, 3m 42s average handling
+time, 72.4% resolution, 86 handoffs, and 930 resolved/qualified sessions), plus
+searchable and sortable example conversations. The metrics, trend grid, and paired
+outcome bars share one 1,400 ms cubic ease-out intro on each page load. Reduced
+motion shows their final state immediately; chart periods and table interactions
+update without replaying the intro. The trend total sums the selected period's
+voice and text sessions. Dashboard analytics are separate from the eight fictional
+reference logs. **Conversation logs** opens the
 sample transcript, outcome, and suggested next step; **Try this agent** opens the
 matching saved agent. Workspace search (Cmd/Ctrl+K) finds pages, agents, and samples.
 

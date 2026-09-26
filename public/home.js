@@ -31,10 +31,6 @@ for (const name of ['home', 'templates', 'agents', 'builder', 'logs']) $(name + 
 function updateConnections(next) {
   config = next;
   updateShellConnections(next);
-  const configured = Object.values(next.configured).filter(Boolean).length;
-  $('workspaceStatus').textContent = `${configured} of 4 keys configured`;
-  $('workspaceStatus').dataset.ready = String(configured === 4);
-
 }
 function card(template) {
   return `<a class="template-card" data-preview="${template.id}" href="/agents/new?preview=${encodeURIComponent(template.id)}" data-accent="${template.accent}"><span class="template-icon">${icon(template.icon)}</span><span class="template-sector">${escape(template.sector)}</span><h3>${escape(template.name)}</h3><p>${escape(template.description)}</p><div class="template-bottom"><span>Preview template</span>${icon('arrow')}</div></a>`;
@@ -106,7 +102,10 @@ try {
   $('pageEyebrow').closest('header').hidden = page === 'home';
   if (['home', 'agents', 'logs'].includes(page)) {
     const agents = await loadAgents();
-    if (page === 'home') mountOverview(agents);
+    if (page === 'home') {
+      const unmountOverview = mountOverview(agents);
+      window.addEventListener('pagehide', unmountOverview, { once: true });
+    }
     if (page === 'agents') $('agentCollection').innerHTML = agents.map(agent => agentCard(agent)).join('');
     if (page === 'logs') mountLogs(agents);
   }
