@@ -10,9 +10,10 @@
 <link rel="stylesheet" href="/workspace.css">
 <link rel="stylesheet" href="/settings.css">
 <link rel="stylesheet" href="/shell.css">
+<link rel="stylesheet" href="/metrix.css">
 <script type="module" src="/session.js"></script>
 </head>
-<body>
+<body class="talk-page">
 
 <header class="bar">
   <div class="session-toolbar">
@@ -24,6 +25,7 @@
     <details class="session-menu" id="sessionMenu"><summary aria-label="Session actions">···</summary><div class="menu-items"><button type="button" id="reset">Clear conversation</button></div></details>
   </div>
 </header>
+<nav class="agent-switcher" id="agentSwitcher" aria-label="Choose a voice agent"></nav>
 
 <main>
   <div class="notice" id="setup" hidden>Add your Jev API key in Settings to analyze calls.</div>
@@ -83,8 +85,10 @@
   </section>
   <section class="decision-signals" id="decisionSignals" hidden aria-label="Jev decision signals"><div class="decision-signals-heading"><strong>What Jev is picking up</strong><span>Signals from this conversation</span></div><div id="signalReadings"></div></section>
   <p id="agentError" class="agent-error" role="alert" hidden></p>
-  <section class="agent-panel" id="agentPanel">
-    <button type="button" class="conversation-open" id="openConversation" aria-haspopup="dialog"><span class="conversation-heading">Conversation <span id="conversationCount">0 messages</span></span><span class="conversation-toggle">View transcript <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 4 4 4-4 4"/></svg></span></button>
+  <section class="agent-panel" id="agentPanel" aria-labelledby="conversationTitle">
+    <div class="transcript-panel-title"><h2 id="conversationTitle">Conversation</h2><span id="conversationCount">0 messages</span></div>
+    <div class="agent-panel-head"><p id="agentModelLabel">OpenAI replies · Jev evaluation</p><span id="agentStatus" role="status">Ready when you are</span></div>
+    <div class="agent-messages" id="agentMessages" role="log" aria-label="Conversation transcript" aria-live="polite" tabindex="0"><p class="agent-empty">Your conversation will appear here when the session starts.</p></div>
   </section>
   <p class="visually-hidden" id="announce" aria-live="polite"></p>
 </main>
@@ -98,11 +102,7 @@
   <p class="error" id="error" role="alert" hidden></p>
 </footer>
 
-<dialog class="conversation-dialog" id="conversationDialog" aria-labelledby="conversationTitle">
-  <div class="conversation-dialog-heading"><div><p>Session transcript</p><h2 id="conversationTitle">Conversation</h2></div><button type="button" class="ghost" id="closeConversation" aria-label="Close transcript"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m4 4 8 8m0-8-8 8"/></svg></button></div>
-  <div class="agent-panel-head"><p id="agentModelLabel">OpenAI replies · Jev evaluation</p><span id="agentStatus" role="status">Ready when you are</span></div>
-  <div class="agent-messages" id="agentMessages" role="log" aria-label="Conversation transcript" aria-live="polite" tabindex="0"><p class="agent-empty">Your conversation will appear here when the session starts.</p></div>
-</dialog>
+
 
 </body>
 </html>

@@ -1,6 +1,7 @@
 import { TEMPLATES, CUSTOM_TEMPLATE, getTemplate, buildPrompt } from './templates.js';
 import { mountTemplatePicker } from './template-picker.js';
-import { icon, mountShell } from './shell.js';
+import { icon, mountShell, loadAgents, updateShellConnections } from './shell.js';
+import { agentCard, mountOverview, mountLogs } from './dashboard.js';
 import { getSettings, mountSettings, apiPost } from './settings.js';
 
 const $ = id => document.getElementById(id);
@@ -8,7 +9,7 @@ const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({ 
 const query = new URLSearchParams(location.search);
 const route = location.pathname;
 const picking = route === '/agents/new' && !query.has('template') && !query.has('edit');
-const page = route === '/agents/new' ? picking ? 'agents' : 'builder' : route === '/agents' ? 'agents' : route === '/templates' ? 'templates' : 'home';
+const page = route === '/agents/new' ? picking ? 'agents' : 'builder' : route === '/agents' ? 'agents' : route === '/templates' ? 'templates' : route === '/logs' ? 'logs' : 'home';
 let config, editing, customPrompt = false;
 const picker = mountTemplatePicker({ onClose: () => { if (picking) location.replace('/agents'); } });
 document.addEventListener('click', event => {
@@ -21,28 +22,22 @@ const settings = mountSettings({ onChange: updateConnections });
 mountShell({ active: page === 'builder' ? 'agents' : page, onSettings: () => settings.open() });
 await import('./account.js');
 document.querySelectorAll('[data-icon]').forEach(element => element.insertAdjacentHTML('afterbegin', icon(element.dataset.icon)));
-$('reviewConnections').onclick = () => settings.open();
-const titles = { home: ['YOUR CONVERSATION STUDIO', 'A little clarity goes a long way.'], templates: ['A HEAD START FOR YOUR TEAM', 'A purpose for every conversation.'], agents: ['YOUR AGENT WORKSPACE', 'Built around your business.'], builder: ['CREATE A WEB AGENT', 'Make the conversation your own.'] };
+
+const titles = { home: ['OVERVIEW', 'Welcome to Cayana'], logs: ['CONVERSATION LOGS', 'Every conversation has a story.'], templates: ['A HEAD START FOR YOUR TEAM', 'A purpose for every conversation.'], agents: ['YOUR AGENTS', 'A purpose for every conversation.'], builder: ['CREATE A WEB AGENT', 'Make the conversation your own.'] };
 $('pageEyebrow').textContent = titles[page][0]; $('pageTitle').textContent = titles[page][1];
-document.title = `Cayana · ${page === 'builder' ? 'Create agent' : page[0].toUpperCase() + page.slice(1)}`;
-for (const name of ['home', 'templates', 'agents', 'builder']) $(name + 'View').hidden = name !== page;
+document.title = `Cayana · ${page === 'builder' ? 'Create agent' : page === 'home' ? 'Overview' : page[0].toUpperCase() + page.slice(1)}`;
+for (const name of ['home', 'templates', 'agents', 'builder', 'logs']) $(name + 'View').hidden = name !== page;
 
 function updateConnections(next) {
   config = next;
+  updateShellConnections(next);
   const configured = Object.values(next.configured).filter(Boolean).length;
-  $('workspaceStatus').textContent = `${configured} of 4 connections ready`;
+  $('workspaceStatus').textContent = `${configured} of 4 keys configured`;
   $('workspaceStatus').dataset.ready = String(configured === 4);
-  $('connectionsSummary').textContent = configured === 4 ? 'All four providers are configured.' : `${configured} of 4 providers configured. Add keys in Connections.`;
+
 }
 function card(template) {
   return `<a class="template-card" data-preview="${template.id}" href="/agents/new?preview=${encodeURIComponent(template.id)}" data-accent="${template.accent}"><span class="template-icon">${icon(template.icon)}</span><span class="template-sector">${escape(template.sector)}</span><h3>${escape(template.name)}</h3><p>${escape(template.description)}</p><div class="template-bottom"><span>Preview template</span>${icon('arrow')}</div></a>`;
-}
-function agentRows(agents) {
-  if (!agents.length) return `<div class="empty-state"><span>${icon('agents')}</span><div><h3>Your first agent starts here.</h3><p>Give it a purpose. We’ll help with the next step.</p></div><a class="text-link" href="/agents/new">Create an agent ↗</a></div>`;
-  return agents.map(agent => {
-    const template = getTemplate(agent.templateId);
-    return `<article class="agent-row" data-accent="${template?.accent || 'blue'}"><span class="template-icon">${icon(template?.icon)}</span><div class="agent-row-title"><h3>${escape(agent.name)}</h3><p>${escape(template?.sector || 'Custom agent')}${agent.company ? ' · ' + escape(agent.company) : ''} · Browser voice</p></div><span class="agent-updated">Updated ${escape(new Date(agent.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))}</span><a class="edit-link" href="/agents/new?edit=${encodeURIComponent(agent.id)}" aria-label="Edit ${escape(agent.name)}">Edit</a><a class="button secondary" href="/talk?agent=${encodeURIComponent(agent.id)}" aria-label="Start talking with ${escape(agent.name)}">Start talking ${icon('arrow')}</a></article>`;
-  }).join('');
 }
 async function get(path) {
   const response = await fetch(path, { cache: 'no-store' });
@@ -108,13 +103,13 @@ try {
   updateConnections(await getSettings());
   if (query.has('settings')) settings.open();
   if (page === 'builder') await builder();
-  if (page === 'home' || page === 'agents') {
-    const { agents } = await get('/api/agents');
-    $('agentCount').textContent = String(agents.length);
-    $('recentAgents').innerHTML = agentRows(agents.slice(0, 3));
-    $('agentCollection').innerHTML = agentRows(agents);
+  $('pageEyebrow').closest('header').hidden = page === 'home';
+  if (['home', 'agents', 'logs'].includes(page)) {
+    const agents = await loadAgents();
+    if (page === 'home') mountOverview(agents);
+    if (page === 'agents') $('agentCollection').innerHTML = agents.map(agent => agentCard(agent)).join('');
+    if (page === 'logs') mountLogs(agents);
   }
-  $('featuredTemplates').innerHTML = TEMPLATES.slice(0, 4).map(card).join('');
   $('allTemplates').innerHTML = TEMPLATES.map(card).join('');
   const filters = ['All templates', ...TEMPLATES.map(template => template.sector)];
   $('templateFilters').replaceChildren(...filters.map((filter, index) => {

@@ -314,7 +314,7 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
       if (req.method === 'GET') {
         if (['/coach', '/dashboard.html', '/setup-key.html'].includes(url.pathname) || url.searchParams.has('overlay')) return redirect('/talk');
         const requested = url.pathname === '/' ? '/home.html' : url.pathname === '/talk' ? '/index.html'
-          : ['/agents', '/templates', '/agents/new'].includes(url.pathname) ? '/home.html' : url.pathname;
+          : ['/agents', '/templates', '/agents/new', '/logs'].includes(url.pathname) ? '/home.html' : url.pathname;
         if (await staticFile(res, requested)) return;
       }
       sendJson(res, 404, { error: 'Not found' });

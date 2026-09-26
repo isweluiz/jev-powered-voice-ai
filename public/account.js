@@ -4,6 +4,7 @@ const account = document.getElementById('accountMenu');
 getSettings().then(config => {
   if (!config.user) return;
   account.hidden = false;
+  document.getElementById('sidebarGuest').hidden = true;
   document.getElementById('accountName').textContent = config.user.name || config.user.email;
   account.querySelector('summary').title = config.user.email;
   document.getElementById('accountEmail').textContent = config.user.email;

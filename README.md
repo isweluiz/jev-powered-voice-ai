@@ -57,8 +57,8 @@ create duplicates. Google accounts receive their own separate copies.
    select **Use this template**. Also try **Write my own prompt**.
 3. Give a test agent a recognizable name, customize its objective and prompt, and
    save it. Reopen it from My agents and verify that its settings were retained.
-4. Open Connections & settings, switch between its tabs, and check light/dark
-   themes. Check the navigation drawer and template dialog at a narrow viewport.
+4. Open Connections & settings and switch between its tabs. Check the navigation
+   drawer, template dialog, agent cards, and transcript at a narrow viewport.
 5. For a live conversation, configure the providers below, open Talk or a saved
    agent, and send a short synthetic message. Check the reply, Jev guidance,
    progress display, and transcript. Select **Start voice session** only when you
@@ -175,9 +175,9 @@ indefinitely. Bandwidth is the default; there is no silent provider fallback.
 
 ## Conversation workspace and web agents
 
-After sign-in, Home opens the Material 3 workspace. Login, navigation, forms,
-settings, and voice sessions share blue tonal surfaces, Roboto typography, and
-light/dark themes. **Start talking** opens the voice agent with your account’s
+Overview uses the supplied Metrix design: charcoal panels, orange accents, Geist
+typography, Geist Mono figures, and compact navigation. The workspace uses a single
+dark theme across Overview, agents, templates, the builder, settings, and Talk. **Start talking** opens the voice agent with your account’s
 default prompt and voice. Live coach and its legacy desktop overlays have been
 removed; old coaching URLs redirect to Talk.
 
@@ -282,6 +282,20 @@ branch. It has no per-user isolation: everyone using that process can manage the
 same provider keys and local agents. It refuses to bind to a non-loopback address.
 Use the Google/PostgreSQL path for a shared deployment.
 
+## Demo analytics and conversation logs
+
+Overview includes four metrics calculated from eight fictional reference logs,
+searchable and sortable recent conversations, and a separately labeled illustrative
+activity chart with weekly/monthly/yearly views. **Conversation logs** opens the
+sample transcript, outcome, and suggested next step; **Try this agent** opens the
+matching saved agent. Workspace search (Cmd/Ctrl+K) finds pages, agents, and samples.
+
+These panels are labeled sample data. They are not live usage analytics or stored
+user recordings. The example Jev summary is supplied demo text, not a fresh API
+result. Existing provider integrations continue to power Talk; this design update
+does not substitute scripted replies for real conversations. No telephony, booking,
+CRM, account-modification, or transfer tools are added.
+
 ## Voice and playback
 
 **Start voice session** uses your microphone. Settings includes a voice selector
@@ -300,14 +314,13 @@ waveform controls; those compatibility responses finish downloading before playb
 
 ## Voice agent workspace
 
-The compact desktop layout places conversation progress and the suggested action
-side by side, with the waveform, latest reply, and sector signals below.
-**View transcript** opens the conversation in a scrollable drawer. Smaller screens
-stack the cards and allow normal scrolling so content stays readable.
+The compact desktop layout places progress, Jev guidance, the waveform, and sector
+signals beside a visible, automatically scrolling transcript. Agent pills let you
+open another saved agent in a fresh session. Smaller screens stack these panels
+and allow normal scrolling so content stays readable.
 **Edit prompt** opens agent configuration without leaving the session.
-The shared design follows [Material 3](https://m3.material.io/) color roles,
-shapes, state layers, typography, navigation, and dialogs. Native HTML controls
-keep keyboard, focus, and Escape behavior without a component framework.
+Shared semantic tokens and native HTML controls keep focus, keyboard, and Escape
+behavior consistent without a component framework.
 
 In **Settings → Agent**, configure the OpenAI
 model and system prompt with your company facts, sales approach, and qualification
@@ -422,9 +435,12 @@ lib/bandwidth.mjs       Authenticated Bandwidth WebSocket relay
 schema.json             Jev questions
 public/home.html        Home, template gallery, agent list and builder
 public/home.js          Agent creation, editing and workspace navigation
-public/home.css         Material workspace and builder layout
-public/material.css     Shared Material 3 tokens and controls
-public/theme.js         Shared theme preference and cross-tab updates
+public/home.css         Base workspace and builder layout
+public/material.css     Shared dark semantic tokens and controls
+public/metrix.css       Metrix dashboard, cards, logs, and voice layout
+public/dashboard.js     Overview interactions, agent cards, and sample log views
+public/demo-data.js     Fictional reference logs and analytics helpers
+public/theme.js         Initializes the shared dark theme
 public/template-picker.js  Search, categories, prompt previews
 public/template-picker.css Responsive template dialog
 public/shell.js         Shared sidebar and account navigation
@@ -434,12 +450,12 @@ public/index.html       Voice-agent conversation workspace
 public/session.js       Voice session, evaluation and transcript controls
 public/session.css      Progress gauge and decision display
 public/login.html       Minimal Google sign-in screen
-public/login.css        Material sign-in layout
+public/login.css        Sign-in layout
 public/login.js         Google sign-in availability and error handling
 public/account.js       Signed-in account menu and sign-out
 public/settings.js      Key-entry dialog and settings requests
 public/settings.css     Settings styling
-public/workspace.css    Compact Material voice-session layout
+public/workspace.css    Base voice-session layout
 public/agent-session.js Half-duplex voice-agent lifecycle and guidance handoff
 public/jev-client.js     Shared evaluations keyed to the exact transcript
 public/waveform.js       Audio-reactive voice waveform

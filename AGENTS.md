@@ -136,14 +136,17 @@ consume credits; only perform them within the user's requested testing scope.
 | Environment and shared settings | `lib/runtime.mjs`, `lib/settings.mjs` |
 | Google/developer auth and user ownership | `lib/auth.mjs`, `lib/database.mjs`, `lib/agents.mjs`, `migrations/` |
 | Home, saved agents, builder | `public/home.html`, `public/home.js`, `public/home.css` |
+| Dashboard and sample logs | `public/dashboard.js`, `public/demo-data.js`, `public/metrix.css` |
 | Templates and picker | `public/templates.js`, `public/template-picker.js`, `public/template-picker.css` |
-| Material theme and compact navigation | `public/material.css`, `public/theme.js`, `public/shell.js`, `public/shell.css` |
+| Dark theme and compact navigation | `public/material.css`, `public/theme.js`, `public/shell.js`, `public/shell.css` |
 | Voice-session UI and lifecycle | `public/index.html`, `public/session.js`, `public/workspace.css`, `public/agent-session.js` |
 | STT, TTS, waveform, evaluation | `lib/bandwidth.mjs`, `lib/agent.mjs`, `public/speech.js`, `public/waveform.js`, `public/jev-client.js` |
 | Decisions and default evaluation questions | `public/decide.js`, `public/playbook.js`, `schema.json` |
 | Automated checks | `test/`, `eslint.config.mjs`, `.github/workflows/ci.yml` |
 
-Use shared Material 3 tokens and existing components. Keep navigation compact
+Use the shared Metrix dark theme (charcoal panels, orange accents, Geist/Geist Mono)
+and existing semantic tokens. Keep sample analytics and logs clearly labeled; never
+present them as actual user history or live provider results. Keep navigation compact
 (12px labels, 18px icons); do not restore the removed Personal workspace block or
 Live coach. Preserve existing file line endings, particularly the CRLF in
 `public/index.html`. Browser modules and server `.mjs` files use ES modules; follow

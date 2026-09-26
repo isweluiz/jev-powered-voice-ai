@@ -84,7 +84,7 @@ test('sector agent context reaches Jev, the reply model, and the configured voic
   assert.equal((await fetch(f.origin + '/api/settings').then(r => r.json())).voice, f.initial.voice);
   assert.equal((await f.post('/api/reply', { agentId: agent.id, turns, guidance: { status: 'act', action: 'book_demo' } })).status, 400);
   assert.equal(f.calls.length, 3);
-  for (const route of ['/', '/talk', '/agents', '/templates', '/agents/new', '/agents/new?template=custom']) assert.equal((await fetch(f.origin + route)).status, 200);
+  for (const route of ['/', '/talk', '/agents', '/templates', '/logs', '/agents/new', '/agents/new?template=custom']) assert.equal((await fetch(f.origin + route)).status, 200);
   for (const route of ['/coach', '/dashboard.html', '/setup-key.html', '/?overlay&card=hero']) {
     const retired = await fetch(f.origin + route, { redirect: 'manual' });
     assert.equal(retired.status, 303);

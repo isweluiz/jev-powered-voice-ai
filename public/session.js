@@ -1,7 +1,7 @@
 import { decide, trackStage, createMemory, markDone, DEFAULT_CONFIG } from "/decide.js";
 import { PLAYBOOK as SALES_PLAYBOOK } from "/playbook.js";
 import { getTemplate, templatePlaybook } from "/templates.js";
-import { mountShell } from "/shell.js";
+import { mountShell, loadAgents, updateShellConnections } from "/shell.js";
 import { AgentSession } from "/agent-session.js";
 import { JevClient, transcriptKey } from "/jev-client.js";
 import { VoiceWaveform } from "/waveform.js";
@@ -33,7 +33,15 @@ const app = {
   memory: createMemory(), result: null, shownScore: null
 };
 
-mountShell({ active: "talk", onSettings: () => settingsPanel.open() });
+mountShell({ active: "talk", onSettings: () => settingsPanel.open(), config: initialConfig });
+loadAgents().then(agents => {
+  $("agentSwitcher").replaceChildren(...agents.map(agent => {
+    const link = document.createElement("a");
+    link.href = "/talk?agent=" + encodeURIComponent(agent.id); link.textContent = agent.name;
+    if (initialConfig.workspaceAgent?.id === agent.id) link.setAttribute("aria-current", "page");
+    return link;
+  }));
+}).catch(() => { $("agentSwitcher").textContent = "Agent list unavailable. Refresh to try again."; });
 await import("/account.js");
 
 /* ---------- Hero ---------- */
@@ -366,6 +374,7 @@ function updateSessionControls() {
 }
 function updateConnectionStatus() {
   if (!providerConfig) return;
+  updateShellConnections(providerConfig);
   const needed = ["openai", "deepgram", "jev", ...(providerConfig.sttProvider === "browser" ? [] : ["bandwidth"])];
   const ready = needed.every(key => providerConfig.configured[key]);
   $("connectionStatus").dataset.ready = String(ready);
@@ -406,16 +415,6 @@ function renderSignals(answers = {}) {
     item.append(title, value); return item;
   }));
 }
-$("openConversation").onclick = () => {
-  $("conversationDialog").showModal();
-  $("agentMessages").scrollTop = $("agentMessages").scrollHeight;
-};
-$("closeConversation").onclick = () => $("conversationDialog").close();
-$("conversationDialog").addEventListener("click", (event) => {
-  if (event.target !== $("conversationDialog")) return;
-  const bounds = event.target.getBoundingClientRect();
-  if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) event.target.close();
-});
 $("generateReply").onclick = () => { voice.unlock().catch(() => {}); return agentSession.reply(); };
 window.addEventListener("pagehide", () => { agentSession.end(); speech.destroy(); browserSpeech.destroy(); voice.destroy(); waveform.destroy(); jevClient.clear(); });
 
@@ -453,7 +452,6 @@ async function resetCall() {
   app.turns = []; app.memory = createMemory(); app.result = null; app.pending = false;
   showHeard("", "customer"); showError(""); $("doneMsg").textContent = "";
   renderSignals();
-  $("conversationDialog").close();
   renderStageIdle(); renderNextIdle(); renderConversation();
 }
 $("reset").addEventListener("click", resetCall);

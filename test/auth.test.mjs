@@ -126,6 +126,7 @@ async function fixture(t, env = {}) {
 test('Google mode locks pages, APIs and audio before login; setup stays closed without credentials', async t => {
   const f = await fixture(t, { GOOGLE_CLIENT_SECRET: '' });
   assert.equal((await f.request('/')).headers.get('location'), '/login');
+  assert.equal((await f.request('/logs')).headers.get('location'), '/login');
   assert.equal((await f.request('/login')).status, 200);
   assert.equal((await f.request('/login.js')).status, 200);
   for (const route of ['/api/settings', '/api/health', '/api/reply', '/api/evaluate', '/api/tts']) assert.equal((await f.request(route)).status, 401);
