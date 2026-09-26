@@ -40,7 +40,19 @@ configured authentication mode, defaulting to Google sign-in.
 
 ### Test the frontend
 
-1. Open the app directly and check Home, Talk, My agents, and Templates.
+Each workspace automatically gets a saved agent for every sector template:
+Sales discovery, Customer concierge, IT service desk, Shipment intake, Guest
+experience, and Service visit intake. Open **My agents → Start talking** to use
+one immediately, then select **Start voice session** when ready to enable the
+microphone. Provider keys are still required for a live conversation.
+
+Starter agents inherit the current workspace model, voice, and STT choice when
+first created. They are editable and saved like your other agents. Refreshing,
+restarting, or changing workspace defaults does not overwrite their settings or
+create duplicates. Google accounts receive their own separate copies.
+
+1. Open the app directly and check Home, Talk, My agents, and Templates. Verify the
+   starter agents appear and **Start talking** opens the selected agent's workspace.
 2. Click **Create web agent**. Search or filter templates, open a preview, and
    select **Use this template**. Also try **Write my own prompt**.
 3. Give a test agent a recognizable name, customize its objective and prompt, and

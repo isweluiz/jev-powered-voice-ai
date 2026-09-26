@@ -10,7 +10,7 @@ import { attachBandwidth } from './lib/bandwidth.mjs';
 import { generateReply } from './lib/agent.mjs';
 import { createAuth, sameToken } from './lib/auth.mjs';
 import { loadEnvironment, startupEnvironment, connectionLimit } from './lib/runtime.mjs';
-import { createLocalAgentStore, validateAgent, newAgent, agentId } from './lib/agents.mjs';
+import { createLocalAgentStore, listWorkspaceAgents, validateAgent, newAgent, agentId } from './lib/agents.mjs';
 import { getTemplate, templateQuestions, templatePlaybook } from './public/templates.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -186,7 +186,7 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
       }
       const view = settingsFor(session);
       if (url.pathname === '/api/agents' && req.method === 'GET') {
-        const owned = await agents.listAgents(session.user.id);
+        const owned = await listWorkspaceAgents(agents, session.user.id, view.status());
         return sendJson(res, 200, { agents: owned.map(({ id, name, templateId, company, updatedAt }) => ({ id, name, templateId, company, updatedAt })) });
       }
       if (url.pathname === '/api/agents' && req.method === 'POST') {

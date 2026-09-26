@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
-import { createLocalAgentStore, validateAgent, newAgent } from '../lib/agents.mjs';
-import { TEMPLATES, CUSTOM_TEMPLATE, getTemplate, templatePlaybook, templateQuestions } from '../public/templates.js';
+import { createLocalAgentStore, listWorkspaceAgents, validateAgent, newAgent } from '../lib/agents.mjs';
+import { TEMPLATES, CUSTOM_TEMPLATE, getTemplate, buildPrompt, templatePlaybook, templateQuestions } from '../public/templates.js';
 import { decide, createMemory, markDone } from '../public/decide.js';
 import { coachingContext } from '../lib/agent.mjs';
 
@@ -52,4 +52,37 @@ test('agent validation rejects unsupported configurations and ignores client own
   for (const change of [{ name: '' }, { templateId: 'unknown' }, { systemPrompt: '' }, { model: '../bad model' }, { voice: 'unknown' }, { knowledge: 'x'.repeat(6001) }]) {
     assert.throws(() => validateAgent({ name: 'Service', templateId: 'service', ...change }, defaults), error => error.status === 400);
   }
+});
+
+test('every template has a saved starter; concurrent visits and restarts preserve edits and other agents', async t => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'cayana-starters-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  let store = createLocalAgentStore(directory);
+  const custom = newAgent(validateAgent({ name: 'My own sales agent', templateId: 'sales', systemPrompt: 'Keep my existing prompt.' }, defaults));
+  await store.saveAgent('alice', custom, { create: true });
+  await Promise.all(Array.from({ length: 4 }, () => listWorkspaceAgents(store, 'alice', defaults)));
+  const agents = await store.listAgents('alice');
+  assert.equal(agents.length, TEMPLATES.length + 1);
+  assert.deepEqual(await store.getAgent('alice', custom.id), custom);
+  const starters = agents.filter(agent => agent.id !== custom.id);
+  assert.deepEqual(new Set(starters.map(agent => agent.templateId)), new Set(TEMPLATES.map(template => template.id)));
+  for (const agent of starters) {
+    assert.equal(agent.systemPrompt, buildPrompt(getTemplate(agent.templateId)));
+    assert.equal(agent.voice, defaults.voice);
+    assert.equal(agent.sttProvider, defaults.sttProvider);
+    assert.equal(agent.model, defaults.agent.model);
+  }
+  const original = starters[0];
+  const edited = { ...original, name: 'My renamed agent', templateId: 'custom', systemPrompt: 'My edited instructions.' };
+  await store.saveAgent('alice', edited);
+  // A competing first-load request must not replace a just-edited starter.
+  await store.saveAgent('alice', original, { create: true, ifAbsent: true });
+  store = createLocalAgentStore(directory);
+  const reloaded = await listWorkspaceAgents(store, 'alice', { ...defaults, voice: 'aura-2-draco-en' });
+  assert.equal(reloaded.length, agents.length);
+  assert.deepEqual(await store.getAgent('alice', edited.id), edited);
+  const bob = await listWorkspaceAgents(store, 'bob', defaults);
+  assert.equal(bob.length, TEMPLATES.length);
+  assert.ok(bob.every(agent => !agents.some(alice => alice.id === agent.id)));
+  assert.equal(await store.getAgent('bob', edited.id), null);
 });

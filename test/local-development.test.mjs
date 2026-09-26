@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createApp } from '../server.mjs';
 import { loadEnvironment, startupEnvironment } from '../lib/runtime.mjs';
+import { TEMPLATES } from '../public/templates.js';
 
 test('local startup is explicit, preserves configured Google startup, and refuses production or conflicting flags', () => {
   const configured = { AUTH_MODE: 'google', DATABASE_URL: 'invalid-url' };
@@ -59,6 +60,16 @@ test('local startup ignores database credentials, opens the workspace without co
   assert.equal(settings.storage, 'local');
   assert.equal(settings.user, null);
   assert.equal(settings.canManageKeys, true);
+  const initialAgents = await fetch(origin + '/api/agents').then(r => r.json());
+  assert.equal(initialAgents.agents.length, TEMPLATES.length);
+  for (const starter of initialAgents.agents) {
+    const config = await fetch(origin + '/api/settings?agentId=' + starter.id).then(r => r.json());
+    assert.equal(config.workspaceAgent.templateId, starter.templateId);
+    assert.equal(config.workspaceAgent.name, starter.name);
+    assert.equal(config.voice, settings.voice);
+    assert.equal(config.sttProvider, settings.sttProvider);
+    assert.equal(config.agent.model, settings.agent.model);
+  }
   const body = JSON.stringify({ name: 'Local test agent', templateId: 'custom', systemPrompt: 'Ask one question at a time.' });
   const post = headers => fetch(origin + '/api/agents', { method: 'POST',
     headers: { 'Content-Type': 'application/json', Origin: origin, ...headers }, body });
@@ -70,8 +81,8 @@ test('local startup ignores database credentials, opens the workspace without co
   await app.close(); app = null;
   origin = await start();
   const { agents } = await fetch(origin + '/api/agents').then(r => r.json());
-  assert.equal(agents.length, 1);
-  assert.equal(agents[0].id, agent.id);
-  assert.equal(agents[0].name, 'Local test agent');
+  assert.equal(agents.length, TEMPLATES.length + 1);
+  assert.equal(agents.find(saved => saved.id === agent.id).name, 'Local test agent');
+  assert.ok(initialAgents.agents.every(starter => agents.some(saved => saved.id === starter.id)));
   assert.equal(await readFile(envPath, 'utf8'), savedEnv, 'Starting locally never rewrites .env');
 });

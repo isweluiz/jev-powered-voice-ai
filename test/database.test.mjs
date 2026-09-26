@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import pg from 'pg';
 import { createPostgresStore } from '../lib/database.mjs';
+import { listWorkspaceAgents } from '../lib/agents.mjs';
+import { TEMPLATES } from '../public/templates.js';
 
 // Opt in against a real database. Each run creates and removes only its own schema.
 test('PostgreSQL migrations, identities, preferences and sessions persist and isolate users', { skip: !process.env.TEST_DATABASE_URL }, async t => {
@@ -54,4 +56,19 @@ test('PostgreSQL migrations, identities, preferences and sessions persist and is
   await store.cleanup();
   const stale = await admin.query(`SELECT token_hash FROM ${schema}.sessions WHERE expires_at<=now()`);
   assert.equal(stale.rowCount, 0);
+  const defaults = { agent: { model: 'gpt-4.1-mini', systemPrompt: 'Default prompt' }, voice: 'aura-2-thalia-en', sttProvider: 'browser' };
+  await Promise.all(Array.from({ length: 4 }, () => listWorkspaceAgents(store, alice.id, defaults)));
+  const aliceAgents = await store.listAgents(alice.id);
+  assert.equal(aliceAgents.length, TEMPLATES.length + 1);
+  const starter = aliceAgents.find(agent => agent.id !== savedAgent.id);
+  const customized = { ...starter, name: 'Customized starter', systemPrompt: 'Preserve this edited prompt.' };
+  await store.saveAgent(alice.id, customized);
+  await store.saveAgent(alice.id, starter, { create: true, ifAbsent: true });
+  await store.close(); store = createPostgresStore(connectionString, { schema }); await store.init();
+  assert.equal((await listWorkspaceAgents(store, alice.id, defaults)).length, TEMPLATES.length + 1);
+  assert.deepEqual(await store.getAgent(alice.id, starter.id), customized);
+  const bobAgents = await listWorkspaceAgents(store, bob.id, defaults);
+  assert.equal(bobAgents.length, TEMPLATES.length);
+  assert.ok(bobAgents.every(agent => !aliceAgents.some(other => other.id === agent.id)));
+  assert.equal(await store.getAgent(bob.id, starter.id), null);
 });

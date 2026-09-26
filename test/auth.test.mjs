@@ -9,6 +9,7 @@ import path from 'node:path';
 import WebSocket, { WebSocketServer } from 'ws';
 import { createApp } from '../server.mjs';
 import { hashToken, publicOrigin } from '../lib/auth.mjs';
+import { TEMPLATES } from '../public/templates.js';
 
 const canonical = 'https://osprey.example';
 const key = 'test-only-provider-key';
@@ -44,7 +45,8 @@ function memoryStore() {
     async savePreferences(id, value) { preferences.set(id, structuredClone(value)); },
     async listAgents(owner) { return [...agents.values()].filter(row => row.owner === owner).map(row => row.agent); },
     async getAgent(owner, id) { const row = agents.get(id); return row?.owner === owner ? structuredClone(row.agent) : null; },
-    async saveAgent(owner, agent, { create = false } = {}) {
+    async saveAgent(owner, agent, { create = false, ifAbsent = false } = {}) {
+      if (create && ifAbsent && agents.has(agent.id)) return null;
       if (!create && agents.get(agent.id)?.owner !== owner) return null;
       agents.set(agent.id, { owner, agent: structuredClone(agent) }); return agent;
     },
@@ -249,7 +251,13 @@ test('saved web agents are owned by their account and cannot select another user
   const created = await f.post(alice, '/api/agents', { name: 'Alice service desk', templateId: 'it-support', company: 'Alice Labs', userId: bob.settings.user.id });
   assert.equal(created.status, 201);
   const { agent } = await created.json();
-  assert.equal((await f.request('/api/agents', { headers: { Cookie: bob.cookie } }).then(r => r.json())).agents.length, 0);
+  const bobAgents = (await f.request('/api/agents', { headers: { Cookie: bob.cookie } }).then(r => r.json())).agents;
+  assert.equal(bobAgents.length, TEMPLATES.length);
+  assert.ok(bobAgents.every(owned => owned.id !== agent.id));
+  const aliceAgents = (await f.request('/api/agents', { headers: { Cookie: alice.cookie } }).then(r => r.json())).agents;
+  assert.equal(aliceAgents.length, TEMPLATES.length + 1);
+  assert.ok(aliceAgents.every(owned => !bobAgents.some(other => other.id === owned.id)));
+  assert.equal((await f.request('/api/settings?agentId=' + bobAgents[0].id, { headers: { Cookie: alice.cookie } })).status, 404);
   const foreign = '/api/agents/' + agent.id;
   assert.equal((await f.request(foreign, { headers: { Cookie: bob.cookie } })).status, 404);
   assert.equal((await f.post(bob, foreign, { name: 'Hijacked' })).status, 404);
