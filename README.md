@@ -4,13 +4,139 @@ A web voice-agent workspace with Google sign-in, Bandwidth speech recognition,
 OpenAI replies, Jev decision guidance, and Deepgram speech. Browser speech
 recognition is available as an alternative.
 
-## Run
+## Local development: start here
 
-Use Node.js 22 or newer and Docker Compose:
+On the `codex/no-auth-local-testing` branch, local development opens the dashboard
+directly, with **no authentication and no database**. All browser sessions use one
+shared local workspace. This mode is for testing on your own computer.
+
+Use **Node.js 24** (the version used by CI) and npm. Run these commands from the
+repository root, where `package.json` is located:
+
+```sh
+npm ci --ignore-scripts
+npm run dev
+```
+
+Open [http://127.0.0.1:3456/](http://127.0.0.1:3456/). There is no sign-in step.
+The terminal should report:
+
+```text
+Cayana running at http://127.0.0.1:3456 · Local testing · No sign-in or database
+```
+
+This is the full frontend and API server. There is no separate frontend process,
+build step, or hot-reload server. Google credentials, Docker, PostgreSQL, and a
+`.env` file are **not required** to browse the UI, preview templates, or create and
+edit local agents. A new checkout can start with no provider keys.
+
+An existing `.env` is loaded automatically; keep it rather than copying over it.
+`npm run dev` executes `node server.mjs --local`, temporarily selecting
+`AUTH_MODE=local` without changing that file. This command accepts only loopback
+addresses and `NODE_ENV=development` (which it defaults when unset).
+It does not connect to PostgreSQL, even if `DATABASE_URL` is already configured.
+Provider keys are still needed for real conversations. `npm start` retains the
+configured authentication mode, defaulting to Google sign-in.
+
+### Test the frontend
+
+1. Open the app directly and check Home, Talk, My agents, and Templates.
+2. Click **Create web agent**. Search or filter templates, open a preview, and
+   select **Use this template**. Also try **Write my own prompt**.
+3. Give a test agent a recognizable name, customize its objective and prompt, and
+   save it. Reopen it from My agents and verify that its settings were retained.
+4. Open Connections & settings, switch between its tabs, and check light/dark
+   themes. Check the navigation drawer and template dialog at a narrow viewport.
+5. For a live conversation, configure the providers below, open Talk or a saved
+   agent, and send a short synthetic message. Check the reply, Jev guidance,
+   progress display, and transcript. Select **Start voice session** only when you
+   are ready to grant microphone access and test speech. Use **End session** to stop.
+
+UI-only checks do not call the speech or reply providers. Sending messages,
+generating replies, previewing a voice, and starting a voice session make real
+provider requests and can consume credits.
+
+### Add keys when testing conversations
+
+Use **Connections & settings → Connections**, or configure these variables in a
+private `.env`:
+
+| Provider | Environment variable | Used for |
+| --- | --- | --- |
+| OpenAI | `OPENAI_API_KEY` | Generating text replies |
+| Jev | `TYPESAFE_API_KEY` | Decision signals and suggested actions |
+| Deepgram | `DEEPGRAM_API_KEY` | Spoken replies and voice previews |
+| Bandwidth | `BW_STT_API_KEY` | Microphone transcription when Bandwidth is selected |
+
+For a new `.env` only, this shell command preserves any existing file:
+
+```sh
+test -f .env || cp .env.example .env
+chmod 600 .env
+```
+
+Choose **Voice → Browser speech recognition** to test without a Bandwidth key;
+availability depends on the browser's speech service. Typed replies require an
+OpenAI key, with Jev providing guidance when configured and available. Deepgram is
+optional for typed replies; without it, replies remain text. A voice session
+requires OpenAI, Deepgram, and either Bandwidth or browser speech recognition.
+Configure Jev as well to test the complete decision-guided flow.
+
+Blank key fields keep existing keys. Changes to provider keys and the default
+agent settings stay in server memory unless **Remember on this computer** is
+selected. That option saves them to the ignored `.env` with owner-only permissions;
+the file is plaintext. Saved web agents persist separately in
+`.cayana/agents.json`, also ignored by Git. Transcripts remain in page memory and
+are lost on reload. There are no separate user accounts in no-login mode: browser
+tabs share provider keys, defaults, and saved agents, while each tab keeps its own
+conversation in memory. Agents previously saved through developer sign-in remain
+on disk under that profile; use `npm run dev:auth` to access them.
+
+### Reload, stop, and troubleshoot
+
+- Refresh the browser after HTML, CSS, or browser-only JavaScript changes in
+  `public/`; static files are served directly. `public/templates.js` and
+  `public/playbook.js` are also imported by the server, so restart after changing them.
+- Restart with **Ctrl+C**, then `npm run dev`, after server/module or `.env` changes.
+  Refresh the browser after restarting. Preserve any settings you want to
+  keep before stopping; saved agent files survive a restart.
+- If a login screen appears, confirm you are on this branch and restart with
+  `npm run dev`. Visiting `/login` in no-login mode redirects to the dashboard.
+  `npm run dev:auth` intentionally shows developer sign-in instead.
+- If startup fails with a production `NODE_ENV`, public `HOST`, or non-local
+  `APP_BASE_URL` inherited from another setup, use command-scoped local overrides.
+  For example, to use port 3457 without rewriting `.env` (macOS/Linux):
+
+  ```sh
+  NODE_ENV=development HOST=127.0.0.1 PORT=3457 APP_BASE_URL=http://127.0.0.1:3457 npm run dev
+  ```
+
+  Open the matching URL. Keep `APP_BASE_URL`, `PORT`, and the browser origin aligned;
+  `localhost` and `127.0.0.1` are distinct origins when `APP_BASE_URL` is set.
+- If the port is occupied, check the existing service before starting another:
+
+  ```sh
+  lsof -nP -iTCP:3456 -sTCP:LISTEN
+  curl --fail --silent --show-error --output /dev/null --write-out 'HTTP %{http_code}\n' http://127.0.0.1:3456/
+  ```
+
+  The dashboard should return HTTP 200 without a session cookie. Stop only the Cayana process you
+  own, or choose a free port; do not terminate unrelated services.
+- A “Keys configured” indicator only confirms that values exist. Provider errors
+  need a real request to diagnose. Browser recognition may be unavailable even
+  when the rest of the application works.
+
+See [Validation](#validation) for automated tests and [AGENTS.md](AGENTS.md) for
+repository instructions for coding agents.
+
+## Run with Google sign-in and PostgreSQL
+
+Use this path when testing real Google accounts and database-backed user isolation.
+Use Node.js 24 and Docker Compose:
 
 ```sh
 npm ci --omit=dev --ignore-scripts
-cp .env.example .env  # only for a new setup; keep an existing .env
+test -f .env || cp .env.example .env
 chmod 600 .env
 # Fill in the database passwords, DATABASE_URL and Google settings below.
 docker compose up -d postgres
@@ -74,7 +200,8 @@ live provider health check.
 
 ## Google sign-in and accounts
 
-The minimalist login screen is at `/login`. Authentication is required by default,
+In Google mode (`npm start` by default), the minimalist login screen is at `/login`.
+Authentication is required,
 including provider APIs, settings, dashboard assets, and audio WebSocket connections.
 An incomplete Google setup keeps access closed.
 
@@ -122,28 +249,26 @@ behind that proxy and keep Node and PostgreSQL off the public network. With the
 any-Google-account policy, internal-only access must be enforced by the network.
 The server does not trust forwarded host headers or arbitrary redirect URLs.
 
-### Local developer sign-in
+### Authentication modes
 
-Run `npm run dev`, open `http://127.0.0.1:3456/login`, and choose **Continue as
-developer**. This starts a local administrator session without Google credentials
-or PostgreSQL. The account menu identifies it as development access and supports
-sign-out. Provider requests use your configured keys as usual.
+| Command | Authentication | Storage |
+| --- | --- | --- |
+| `npm run dev` | None; one shared local workspace | Local files; no PostgreSQL |
+| `npm run dev:auth` | **Continue as developer** at `/login` | Local files and in-memory sessions; no PostgreSQL |
+| `npm start` | Google by default; follows the environment | PostgreSQL for Google accounts and saved agents |
 
-The command temporarily selects `AUTH_MODE=development` and defaults `NODE_ENV`
-to `development`; it does not modify `.env`. Developer mode requires
-`NODE_ENV=development`, a loopback `HOST`, and a loopback `APP_BASE_URL` if set.
-It refuses production mode or a public address. The developer sign-in endpoint
-is unavailable in Google mode, even when `NODE_ENV=development`.
+Both development commands default `NODE_ENV` to `development` and refuse an
+existing production value or a public network address. They override `AUTH_MODE`
+only for that process, without rewriting `.env`. Developer sign-in sessions use
+separate cookies and do not modify Google accounts or database records. The
+developer sign-in endpoint is unavailable in Google mode, even when
+`NODE_ENV=development`. Stop the dev server and run `npm start` to return to the
+authentication mode in your environment (`google` by default).
 
-Developer sessions use separate HttpOnly cookies, expire after eight hours, and
-are lost when the server stops. Google accounts and database records are untouched.
-Agent settings and provider key changes last for this server process unless you
-choose **Remember on this computer**, which saves them in the private local `.env`.
-Stop the dev server and run `npm start` to use the Google configuration again.
-
-For a deliberate single-user localhost setup only, `AUTH_MODE=local` disables
-Google/DB login and restores local settings behavior. It refuses to bind to a
-non-loopback address. Do not use this mode for a shared deployment.
+`AUTH_MODE=local` is the existing database-free mode used by `npm run dev` on this
+branch. It has no per-user isolation: everyone using that process can manage the
+same provider keys and local agents. It refuses to bind to a non-loopback address.
+Use the Google/PostgreSQL path for a shared deployment.
 
 ## Voice and playback
 
@@ -217,12 +342,12 @@ storage or sent in WebSocket URLs. Settings shows only whether each key exists;
   PostgreSQL account. Administrators can change shared keys for the current server
   process or choose **Save changed provider keys on the server** to persist them
   in the private `.env`. Regular members only see connection status.
-- **Local mode / session only (default):** changes live in server memory until it stops.
-- **Local mode / Remember on this computer:** explicitly saves all current keys, the STT choice,
+- **Local/developer mode / session only (default):** default preferences and keys live in server memory until it stops. Saved web agents persist separately.
+- **Local/developer mode / Remember on this computer:** explicitly saves all current keys, the STT choice,
   the TTS voice, and agent configuration into `.env` with owner-only file permissions. This is plaintext
   local storage, not encryption. Blank key fields retain the existing value; a
   Remove checkbox clears it. Check Remember to make removals survive a restart.
-- **Manual setup:** copy `.env.example` to `.env` and fill in the keys. `.env` is
+- **Manual setup:** for a new file, copy `.env.example` to `.env` and fill in the keys. Preserve an existing `.env`. It is
   loaded automatically on startup and ignored by Git. The parent process's
   environment takes precedence over `.env`; UI changes override it for the current
   process. Avoid exporting stale keys when restarting with a saved `.env`.
@@ -240,17 +365,18 @@ WebSocket access, validates hosts and origins, and authorizes settings changes b
 ## Data flow
 
 ```
-Microphone / shared audio → localhost WebSocket → Bandwidth STT
-Browser speech mode     → browser recognition service
-                         ↓ text
-                  localhost → Jev → on-screen coaching
-                                      ↓ Read aloud
-                               localhost → Deepgram → audio
+Microphone → localhost WebSocket → Bandwidth STT ─┐
+Microphone → browser recognition service ───────┼→ transcript
+Typed message ─────────────────────────────────┘
+                                                ↓
+                          localhost → Jev → suggested action + signals
+                                                ↓
+                          localhost → OpenAI + system prompt → reply
+                                                                ↓
+                          browser audio ← localhost ← Deepgram speech
 
-Voice agent: STT → Jev suggested action → OpenAI + system prompt → reply
-                                                    ↓
-                               localhost → Deepgram → audio
-            The same Jev evaluation updates the buying-stage display.
+The same Jev evaluation updates the progress and suggested-action cards.
+If Jev is unavailable, the reply continues using the system prompt alone.
 ```
 
 Bandwidth uses 16 kHz mono PCM16 in 160 ms frames. Final `Segment.text` deltas are
@@ -260,10 +386,10 @@ bounded startup/shutdown times and backpressure limits. Audio and transcripts ar
 not written to disk by the application. Only the last 40 turns (1,500 characters
 per turn) are sent to Jev.
 
-Microphone/shared audio leaves this computer for Bandwidth in Bandwidth mode, or
+Microphone audio leaves this computer for Bandwidth in Bandwidth mode, or
 for the browser's recognition service in browser mode. Conversation text goes to
-Jev. In Voice agent mode, conversation text and your system prompt also go to OpenAI.
-Text selected for Read aloud and generated agent replies go to Deepgram. Grant capture permission and
+Jev. Conversation text and your system prompt also go to OpenAI.
+Generated replies and voice-preview text go to Deepgram. Grant microphone permission and
 use these services only for conversations you intend to send to those providers.
 
 ## Structure
@@ -318,9 +444,32 @@ test/                   Offline provider and audio lifecycle tests
 npm ci --ignore-scripts
 npm run lint
 npm test
-npm run test:db          # uses DATABASE_URL; isolates data in a temporary schema
-npm audit --omit=dev
 ```
+
+These checks do not require a running app or Docker. Tests start temporary local
+HTTP/WebSocket servers and use temporary directories for fixtures. `npm test`
+skips the PostgreSQL test unless `TEST_DATABASE_URL` is set; this is expected for
+the frontend-only development workflow.
+
+For the optional database check, configure a local test database using the
+[PostgreSQL setup](#run-with-google-sign-in-and-postgresql), then run:
+
+```sh
+npm run db:up
+npm run test:db
+```
+
+`test:db` reads `DATABASE_URL` from `.env` or the process environment and runs only
+the database test. It creates a random temporary schema, runs migrations and
+isolation checks there, and drops only that schema afterward. Use a local test
+database whose user can create schemas; do not point it at a production database.
+When finished, `npm run db:stop` stops PostgreSQL and preserves its volume. If it
+was already running for another local task, leave that shared service running.
+
+`npm audit --omit=dev` is a separate dependency check that requires registry
+access. In a restricted coding-agent sandbox, server startup, HTTP verification,
+or socket-based tests may need permission to bind/connect to loopback. A sandbox
+socket denial is not evidence that the app's authentication should be bypassed.
 
 Core tests use local fake providers and dummy credentials; they do not record a
 microphone or call paid APIs. Real Bandwidth and Deepgram validation requires your

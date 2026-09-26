@@ -5,7 +5,8 @@
   "main": "server.mjs",
   "description": "Cayana web voice agents with Jev decision guidance",
   "scripts": {
-    "dev": "node server.mjs --dev",
+    "dev": "node server.mjs --local",
+    "dev:auth": "node server.mjs --dev",
     "start": "node server.mjs",
     "test": "node --test",
     "lint": "eslint . --max-warnings=0",

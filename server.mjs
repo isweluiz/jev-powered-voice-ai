@@ -9,7 +9,7 @@ import { createSettings, validatePreferences } from './lib/settings.mjs';
 import { attachBandwidth } from './lib/bandwidth.mjs';
 import { generateReply } from './lib/agent.mjs';
 import { createAuth, sameToken } from './lib/auth.mjs';
-import { loadEnvironment, connectionLimit } from './lib/runtime.mjs';
+import { loadEnvironment, startupEnvironment, connectionLimit } from './lib/runtime.mjs';
 import { createLocalAgentStore, validateAgent, newAgent, agentId } from './lib/agents.mjs';
 import { getTemplate, templateQuestions, templatePlaybook } from './public/templates.js';
 
@@ -143,6 +143,7 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
       if (!validHost(req)) return sendJson(res, 403, { error: 'This hostname is not allowed.' });
       const url = new URL(req.url, `http://${req.headers.host}`);
       const redirect = (location, cookies) => { res.writeHead(303, { Location: location, ...(cookies ? { 'Set-Cookie': cookies } : {}) }); res.end(); };
+      if (!auth.enabled && req.method === 'GET' && ['/login', '/login.html'].includes(url.pathname)) return redirect('/');
       if (req.method === 'GET' && ['/login', '/login.html', '/login.css', '/login.js', '/material.css', '/theme.js'].includes(url.pathname)) {
         if (await staticFile(res, url.pathname === '/login' ? '/login.html' : url.pathname)) return;
       }
@@ -334,17 +335,13 @@ export async function createApp({ env = process.env, envPath = path.join(HERE, '
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   try {
-    const env = await loadEnvironment(path.join(HERE, '.env'));
-    if (process.argv.includes('--dev')) {
-      env.AUTH_MODE = 'development';
-      env.NODE_ENV ||= 'development';
-    }
+    const env = startupEnvironment(await loadEnvironment(path.join(HERE, '.env')), process.argv.slice(2));
     const app = await createApp({ env });
     app.server.on('error', async () => {
       console.error('Cayana could not listen on the configured address. Check HOST and PORT.');
       process.exitCode = 1; await app.close();
     });
-    app.server.listen(app.port, app.host, () => console.log(`Cayana running at ${app.auth.origin || `http://127.0.0.1:${app.port}`}${app.auth.development ? ' · Local developer sign-in enabled' : app.auth.enabled && !app.auth.configured ? ' · Google sign-in awaits configuration' : ''}`));
+    app.server.listen(app.port, app.host, () => console.log(`Cayana running at ${app.auth.origin || `http://127.0.0.1:${app.port}`}${!app.auth.enabled ? ' · Local testing · No sign-in or database' : app.auth.development ? ' · Local developer sign-in enabled' : !app.auth.configured ? ' · Google sign-in awaits configuration' : ''}`));
     let closing = false;
     for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => {
       if (closing) return;
